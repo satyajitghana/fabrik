@@ -1,0 +1,36 @@
+---
+title: Introduction
+description: What is fabrik-ui and why use it
+---
+
+# Introduction
+
+fabrik-ui is a generative UI SDK where the AI decides what components to render — not just text.
+
+## What makes it different?
+
+Traditional chat SDKs return text. fabrik-ui returns **rich UI components** — charts, cards, tables, dashboards — that the LLM dynamically selects based on the conversation.
+
+## Key Features
+
+- **Any LLM** — OpenAI, Anthropic, Google, 53+ via AI SDK, or bring your own
+- **Generative UI** — LLM decides which components to render
+- **Streaming** — Text and components stream progressively
+- **Elicitation** — AI asks follow-up questions with choice pills
+- **55 shadcn components** — Full component library included
+- **fabrik-pages** — Define routes + prompts, AI renders entire pages
+
+## Quick Example
+
+```tsx
+import { Fabrik, Chat } from "@fabrik/ui/react"
+import { openai } from "@fabrik/ui/openai"
+
+function App() {
+  return (
+    <Fabrik provider={openai({ model: "gpt-4o" })} components={[weatherCard]}>
+      <Chat />
+    </Fabrik>
+  )
+}
+```

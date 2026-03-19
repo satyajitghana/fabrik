@@ -1,0 +1,56 @@
+/* fabrik-ui neutral preset — warm neutral tones */
+:root {
+  --fabrik-bg: #faf9f7;
+  --fabrik-fg: #1c1917;
+  --fabrik-card: #ffffff;
+  --fabrik-card-fg: #1c1917;
+  --fabrik-muted: #f5f5f4;
+  --fabrik-muted-fg: #78716c;
+  --fabrik-border: #e7e5e4;
+  --fabrik-input: #e7e5e4;
+  --fabrik-primary: #292524;
+  --fabrik-primary-fg: #fafaf9;
+  --fabrik-accent: #f5f5f4;
+  --fabrik-accent-fg: #292524;
+  --fabrik-destructive: #ef4444;
+  --fabrik-success: #16a34a;
+  --fabrik-ring: #a8a29e;
+  --fabrik-radius: 0.5rem;
+  --fabrik-chart-1: #c2410c;
+  --fabrik-chart-2: #b45309;
+  --fabrik-chart-3: #4d7c0f;
+  --fabrik-chart-4: #0e7490;
+  --fabrik-chart-5: #7e22ce;
+
+  --background: var(--fabrik-bg);
+  --foreground: var(--fabrik-fg);
+  --card: var(--fabrik-card);
+  --card-foreground: var(--fabrik-card-fg);
+  --muted: var(--fabrik-muted);
+  --muted-foreground: var(--fabrik-muted-fg);
+  --border: var(--fabrik-border);
+  --input: var(--fabrik-input);
+  --primary: var(--fabrik-primary);
+  --primary-foreground: var(--fabrik-primary-fg);
+  --accent: var(--fabrik-accent);
+  --accent-foreground: var(--fabrik-accent-fg);
+  --destructive: var(--fabrik-destructive);
+  --success: var(--fabrik-success);
+  --ring: var(--fabrik-ring);
+}
+
+.dark, [data-theme="dark"] {
+  --fabrik-bg: #0c0a09;
+  --fabrik-fg: #fafaf9;
+  --fabrik-card: #1c1917;
+  --fabrik-card-fg: #fafaf9;
+  --fabrik-muted: #292524;
+  --fabrik-muted-fg: #a8a29e;
+  --fabrik-border: #292524;
+  --fabrik-input: #292524;
+  --fabrik-primary: #fafaf9;
+  --fabrik-primary-fg: #1c1917;
+  --fabrik-destructive: #dc2626;
+  --fabrik-success: #22c55e;
+  --fabrik-ring: #78716c;
+}

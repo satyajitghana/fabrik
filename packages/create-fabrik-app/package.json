@@ -1,0 +1,19 @@
+{
+  "name": "create-fabrik-app",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": { "create-fabrik-app": "./dist/index.js" },
+  "scripts": { "build": "tsup" },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "prompts": "^2.4.2",
+    "chalk": "^5.4.0",
+    "fs-extra": "^11.3.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/prompts": "^2.4.9",
+    "tsup": "^8.4.0",
+    "typescript": "^5.9.3"
+  }
+}

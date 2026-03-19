@@ -1,0 +1,49 @@
+---
+title: How Generative UI Works
+description: Understanding the component rendering pipeline
+---
+
+# How Generative UI Works
+
+## The Pipeline
+
+1. **Developer registers components** with Zod schemas via `defineComponent()`
+2. **fabrik-ui converts these** into LLM tool definitions with `show_` prefix
+3. **System prompt is auto-generated** describing available components
+4. **LLM decides** to render a component by calling `show_weather_card({ city: "SF", temp: 68 })`
+5. **Props stream in** incrementally as the LLM generates them
+6. **React component renders** with the streamed props
+
+## Example Flow
+
+When you ask "What's the weather?", the LLM:
+
+1. Calls tool `show_weather_card` with `{ city: "San Francisco", temp: 68, condition: "sunny" }`
+2. fabrik-ui translates this into `component_start` → `component_delta` → `component_done` events
+3. The state reducer accumulates props and updates the message
+4. `<Message>` renders `<ComponentSlot>` which looks up `WeatherCard` in the registry
+5. Your React component renders with the final props
+
+## Tool Steps
+
+When the LLM calls data-fetching tools (not `show_` tools), fabrik-ui shows animated progress:
+
+```
+✓ Searching weather API...     0.6s
+✓ Fetching temperature data... 0.5s
+✓ Loading precipitation...     0.4s
+```
+
+Each step appears with a spinner, then transitions to a checkmark when complete.
+
+## Elicitation
+
+The AI can ask users questions mid-conversation:
+
+- **Choice** — pill buttons for single selection
+- **Multi-choice** — checkbox cards
+- **Confirm** — yes/no dialog
+- **Text input** — free text
+- **Permission** — allow/deny for resources
+
+The stream **pauses** until the user responds, then continues.
