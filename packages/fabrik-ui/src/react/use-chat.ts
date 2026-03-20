@@ -15,6 +15,7 @@ export interface UseChatReturn {
     set: (value: string) => void
     files: File[]
     addFile: (file: File) => void
+    removeFile: (index: number) => void
     clearFiles: () => void
   }
 
@@ -49,6 +50,7 @@ export function useChat(): UseChatReturn {
       set: actions.setInput,
       files: state.input.files,
       addFile: actions.addFile,
+      removeFile: actions.removeFile,
       clearFiles: actions.clearFiles,
     }),
     [state.input, actions]

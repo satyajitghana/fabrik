@@ -1,10 +1,13 @@
 import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: ".",
+  testMatch: [
+    "examples/*/tests/**/*.spec.ts",
+    "apps/*/tests/**/*.spec.ts",
+  ],
   timeout: 30000,
   use: {
-    baseURL: "http://localhost:4100",
     headless: true,
     viewport: { width: 1280, height: 800 },
   },

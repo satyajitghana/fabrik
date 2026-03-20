@@ -58,6 +58,7 @@ export function InputArea({
     const fileInput = document.createElement("input")
     fileInput.type = "file"
     fileInput.multiple = true
+    fileInput.accept = "image/*,.pdf,.txt,.csv,.json,.md"
     fileInput.onchange = () => {
       if (fileInput.files) {
         Array.from(fileInput.files).forEach((f) => input.addFile(f))
@@ -70,36 +71,51 @@ export function InputArea({
     <div className={cn("relative", className)}>
       {/* File chips */}
       {input.files.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 px-4 pb-2">
-          {input.files.map((f, i) => (
-            <span
-              key={`${f.name}-${i}`}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs",
-                "bg-[var(--muted)] text-[var(--muted-foreground)]",
-              )}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        <div className="flex flex-wrap gap-2 px-3 pb-2">
+          {input.files.map((f, i) => {
+            const isImage = f.type.startsWith("image/")
+            return (
+              <div
+                key={`${f.name}-${i}`}
+                className={cn(
+                  "group/chip relative inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-2 py-1",
+                  "bg-[var(--muted)] text-[var(--muted-foreground)]",
+                  isImage ? "pl-1" : "",
+                )}
               >
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
-              {f.name}
-            </span>
-          ))}
+                {isImage ? (
+                  <img
+                    src={URL.createObjectURL(f)}
+                    alt={f.name}
+                    className="h-8 w-8 rounded object-cover"
+                  />
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                )}
+                <span className="max-w-[120px] truncate text-xs">{f.name}</span>
+                <button
+                  type="button"
+                  onClick={() => input.removeFile(i)}
+                  className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full hover:bg-[var(--border)] transition-colors"
+                  aria-label={`Remove ${f.name}`}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 
       <div
         className={cn(
-          "flex items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2",
+          "flex items-end gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-2 py-1.5",
           "shadow-sm transition-shadow duration-200 focus-within:shadow-md",
         )}
       >
@@ -140,7 +156,7 @@ export function InputArea({
           disabled={isDisabled}
           rows={1}
           className={cn(
-            "max-h-[200px] min-h-[36px] flex-1 resize-none bg-transparent py-1.5 text-sm leading-relaxed",
+            "max-h-[200px] min-h-[34px] flex-1 resize-none bg-transparent py-1.5 text-sm leading-relaxed",
             "text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]",
             "outline-none",
             "disabled:opacity-50",

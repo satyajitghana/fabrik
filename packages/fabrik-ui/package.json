@@ -67,6 +67,11 @@
       "import": "./dist/pages/index.js",
       "require": "./dist/pages/index.cjs"
     },
+    "./chat": {
+      "types": "./dist/chat/index.d.ts",
+      "import": "./dist/chat/index.js",
+      "require": "./dist/chat/index.cjs"
+    },
     "./styles.css": "./dist/styles.css",
     "./themes/neutral.css": "./dist/themes/neutral.css",
     "./themes/blue.css": "./dist/themes/blue.css"
@@ -93,9 +98,11 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "shiki": "^4.0.2",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@workspace/typescript-config": "workspace:*",

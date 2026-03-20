@@ -15,61 +15,66 @@ See `.impeccable.md` for the full Design Context. Key points:
 - **Accessibility:** WCAG AA compliance required
 - **Design Principles:** Speed over ceremony, precision not decoration, show don't tell, accessible by default, teal is the signature
 
-## Design Context
-
-### Users
-Broad developer audience — from indie hackers shipping fast to enterprise teams evaluating production-ready SDKs. They encounter Fabrik when building AI-powered interfaces and want to go from zero to working generative UI with minimal friction. They value speed, reliability, and good defaults over customization complexity.
-
-### Brand Personality
-**Technical, Sharp, Fast** — a developer-first SDK that conveys power and speed. The interface should feel like a precision tool: no wasted space, no unnecessary decoration. Every element earns its place.
-
-**Brand Color:** Teal — the primary brand accent. Use teal as the signature color across primary actions, highlights, and brand moments.
-
-**Emotional Goals:** Confidence ("this just works"), speed ("I shipped in 5 minutes"), and trust ("this is production-grade").
-
-### Aesthetic Direction
-**Visual Tone:** Developer-friendly but visually rich — inspired by Stripe and Tailwind CSS. Clean typography, generous whitespace, colorful gradients for brand moments, but restrained in the component library itself.
-
-**References:**
-- **Stripe** — colorful gradients, strong documentation, premium feel with developer trust
-- **Tailwind CSS** — bold visual identity, excellent docs, developer community feel
-
-**Anti-references:**
-- Overly minimal/gray interfaces that feel lifeless
-- Heavy enterprise dashboards with cluttered UI
-- Generic SaaS templates with stock illustrations
-
-**Theme:** Light and dark mode support. Neutral base palette (current OKLCH system) with teal as the signature accent color.
-
-**Typography:** Geist Sans + Geist Mono — modern, clean, technically sharp. Maintain current font stack.
-
-### Design Principles
-1. **Speed over ceremony** — Every interaction should feel instant. Prefer fewer clicks, faster feedback, and progressive disclosure over upfront complexity.
-2. **Precision, not decoration** — Use whitespace, typography, and layout to create clarity. Avoid ornamental elements. If it doesn't help the developer, remove it.
-3. **Show, don't tell** — Demonstrate capabilities through live examples, code snippets, and interactive previews rather than marketing copy.
-4. **Accessible by default** — Target WCAG AA compliance. All components must support keyboard navigation, screen readers, and sufficient contrast ratios. Respect reduced motion preferences.
-5. **Teal is the signature** — Use the teal brand color strategically for primary actions, active states, and brand moments. Let it pop against the neutral base palette.
-
-### Technical Constraints
-- **Component System:** 55+ shadcn components on Base UI primitives with CVA variants
-- **Color Space:** OKLCH for perceptually uniform color management
-- **Animation:** Motion (spring physics) + Tailwind CSS animate utilities
-- **Radius Scale:** Base 0.625rem with calculated multiples (sm through 4xl)
-- **Spacing:** Tailwind default 4px grid
-- **Icons:** Lucide React (components), Phosphor Icons (brand/marketing)
-
 ## Code Standards
 
 - **`any` is banned.** Never use `any` in TypeScript. Use proper types, generics, `unknown`, or specific interfaces instead. This applies to all packages, examples, and app code.
+- **API keys are server-side only.** Never expose API keys in frontend/client code. Use the `handler()` + `server()` pattern.
+- **Use design tokens.** Never hard-code hex colors. Use CSS variables (`var(--primary)`, `var(--border)`, etc.).
+- **Respect reduced motion.** All animations must check `useReducedMotion()` and degrade gracefully.
+
+## Architecture
+
+### Client-Server Pattern
+
+```
+Client (browser)                    Server (API route)
+─────────────────                   ──────────────────
+server({ url: "/api/chat" })  →→→   handler({ provider: openai({ model: "gpt-4o" }) })
+    ↓ SSE stream                         ↓ reads OPENAI_API_KEY from env
+<Fabrik provider={...}>                  ↓ streams to LLM
+  <Chat />                               ↓ yields StreamEvents
+</Fabrik>                           ←←←  SSE response
+```
+
+### Key imports
+
+```typescript
+// Client-side
+import { Fabrik, Chat, useChat, Message } from "@fabrik/ui/react"
+import { server } from "@fabrik/ui/server"
+import { defineComponent } from "@fabrik/ui"
+
+// Server-side (API route)
+import { handler } from "@fabrik/ui/server"
+import { openai } from "@fabrik/ui/openai"       // reads OPENAI_API_KEY
+import { anthropic } from "@fabrik/ui/anthropic"   // reads ANTHROPIC_API_KEY
+import { google } from "@fabrik/ui/google"         // reads GOOGLE_AI_API_KEY
+```
 
 ## Project Structure
 
-- `apps/web/` — Next.js 16 marketing site and playground
-- `packages/ui/` — 55+ shadcn components (shared design system)
-- `packages/fabrik-ui/` — Core SDK (core, react, adapters, themes, chat)
-- `packages/cli/` — CLI tool
-- `packages/create-fabrik-app/` — Project scaffolding
-- `examples/` — Example projects
+```
+apps/web/                — Next.js 16 marketing site, playground, docs (fumadocs)
+packages/ui/             — 55+ shadcn components (shared design system)
+packages/fabrik-ui/      — Core SDK
+  src/core/              — Client, stream, reducer, registry, types
+  src/react/             — <Fabrik>, useChat(), <Message>, <Chat>, <Fab>
+  src/chat/              — Elicitations, artifacts, code diffs, input, motion utils
+  src/adapters/          — OpenAI, Anthropic, Google, AI SDK, custom
+  src/server/            — handler(), server() adapter
+  src/pages/             — FabrikPages route-based rendering
+  src/themes/            — CSS variable presets (default, blue, neutral)
+  src/ui/                — Pre-built component schemas
+packages/cli/            — CLI tool (fabrik init, fabrik add)
+packages/create-fabrik-app/ — Project scaffolding
+examples/
+  next-chat/             — Full chat demo (port 4100)
+  next-widget/           — FAB widget overlay (port 4200)
+  next-copilot/          — Two-panel copilot (port 4300)
+  custom-agent/          — Multi-step agent (port 4400)
+  local-model/           — Mock Ollama provider (port 4500)
+  pages-demo/            — Fabrik Store e-commerce (port 4600)
+```
 
 ## Tech Stack
 
@@ -79,4 +84,24 @@ Broad developer audience — from indie hackers shipping fast to enterprise team
 - **Styling:** Tailwind CSS 4, CVA, tw-animate-css
 - **Animation:** Motion (spring physics)
 - **Charts:** Recharts
+- **Syntax Highlighting:** Shiki
+- **Validation:** Zod 4
 - **Primitives:** Base UI (@base-ui/react)
+- **Testing:** Playwright (E2E, per-example)
+- **Docs:** Fumadocs
+
+## Testing
+
+Each example has its own `tests/screenshot.spec.ts` and `tests/screenshots/` folder.
+
+```bash
+npx playwright test                      # All 44 tests (parallel, 7 workers)
+npx playwright test examples/next-chat/  # One example
+```
+
+## Building
+
+```bash
+npx turbo build --filter=@fabrik/ui   # Build SDK
+pnpm run dev                           # Start all examples + website
+```

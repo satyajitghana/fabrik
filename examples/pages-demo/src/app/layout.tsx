@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "fabrik-ui — Pages Demo",
-  description: "AI-first page rendering with FabrikPages",
+  title: "Fabrik Store — Premium Footwear & Apparel",
+  description: "Premium shoe and apparel store demo built with Fabrik UI",
 };
 
 export default function RootLayout({

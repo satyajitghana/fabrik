@@ -8,6 +8,7 @@ import type {
   TextPart,
   ThinkingPart,
   StepPart,
+  ArtifactPart,
 } from "./types"
 import { generateId } from "./utils"
 
@@ -25,6 +26,7 @@ export type StateAction =
   | { type: "STREAM_EVENT"; threadId: string; event: StreamEvent }
   | { type: "SET_INPUT"; value: string }
   | { type: "ADD_FILE"; file: File }
+  | { type: "REMOVE_FILE"; index: number }
   | { type: "CLEAR_FILES" }
   | { type: "RESPOND_ASK"; threadId: string; askId: string; response: unknown }
 
@@ -127,6 +129,16 @@ export function reduce(state: ClientState, action: StateAction): ClientState {
       return {
         ...state,
         input: { ...state.input, files: [...state.input.files, action.file] },
+      }
+    }
+
+    case "REMOVE_FILE": {
+      return {
+        ...state,
+        input: {
+          ...state.input,
+          files: state.input.files.filter((_, i) => i !== action.index),
+        },
       }
     }
 
@@ -298,6 +310,40 @@ function processStreamEvent(
         parts.map((p) =>
           p.type === "step" && p.id === event.id
             ? { ...p, stepStatus: event.stepStatus, durationMs: event.durationMs }
+            : p
+        )
+      )
+    }
+
+    case "artifact_start": {
+      return updateLastAssistantMessage(state, threadId, (parts) => [
+        ...parts,
+        {
+          type: "artifact",
+          id: event.id,
+          title: event.title,
+          language: event.language,
+          content: "",
+          status: "streaming",
+        } as ArtifactPart,
+      ])
+    }
+
+    case "artifact_delta": {
+      return updateLastAssistantMessage(state, threadId, (parts) =>
+        parts.map((p) =>
+          p.type === "artifact" && p.id === event.id
+            ? { ...p, content: (p as ArtifactPart).content + event.delta }
+            : p
+        )
+      )
+    }
+
+    case "artifact_done": {
+      return updateLastAssistantMessage(state, threadId, (parts) =>
+        parts.map((p) =>
+          p.type === "artifact" && p.id === event.id
+            ? { ...p, status: "done" as const }
             : p
         )
       )

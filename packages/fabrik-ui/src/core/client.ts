@@ -150,6 +150,9 @@ export class FabrikClient {
     addFile: (file: File): void => {
       this.dispatch({ type: "ADD_FILE", file })
     },
+    removeFile: (index: number): void => {
+      this.dispatch({ type: "REMOVE_FILE", index })
+    },
     clearFiles: (): void => {
       this.dispatch({ type: "CLEAR_FILES" })
     },

@@ -1,7 +1,7 @@
 "use client"
 
 import { Fabrik, useChat } from "@fabrik/ui/react"
-import { ollamaProvider } from "@/lib/ollama-provider"
+import { createMockProvider } from "@/lib/mock-provider"
 import { useRef, useEffect } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import type { FabrikMessage, TextPart, StepPart } from "@fabrik/ui"
@@ -18,9 +18,11 @@ import {
 
 const spring = { type: "spring" as const, damping: 30, stiffness: 300 }
 
+const provider = createMockProvider()
+
 export default function Home() {
   return (
-    <Fabrik provider={ollamaProvider} theme="light">
+    <Fabrik provider={provider} theme="light">
       <div className="flex h-dvh flex-col bg-background font-sans">
         <Header />
         <ChatView />

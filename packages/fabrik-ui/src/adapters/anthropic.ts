@@ -11,17 +11,33 @@ import type {
 // ---------------------------------------------------------------------------
 
 export interface AnthropicOptions {
-  apiKey: string
+  apiKey?: string
   model?: string
 }
 
-export function anthropic(options: AnthropicOptions): Provider {
-  const { apiKey, model: defaultModel } = options
+export function anthropic(options: AnthropicOptions = {}): Provider {
+  const { apiKey: providedKey, model: defaultModel } = options
+
+  // Read from env var if not provided (server-side only)
+  const resolveApiKey = (): string => {
+    const key =
+      providedKey ??
+      (typeof process !== "undefined"
+        ? process.env?.ANTHROPIC_API_KEY
+        : undefined)
+    if (!key) {
+      throw new Error(
+        "Anthropic API key not found. Pass apiKey option or set ANTHROPIC_API_KEY environment variable.",
+      )
+    }
+    return key
+  }
 
   return {
     name: "anthropic",
 
     async *stream(streamOptions: StreamOptions): AsyncIterable<StreamEvent> {
+      const apiKey = resolveApiKey()
       const { messages, systemPrompt, tools, model, signal } = streamOptions
       const resolvedModel = model ?? defaultModel ?? "claude-sonnet-4-20250514"
 

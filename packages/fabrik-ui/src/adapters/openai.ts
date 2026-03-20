@@ -11,18 +11,32 @@ import type {
 // ---------------------------------------------------------------------------
 
 export interface OpenAiOptions {
-  apiKey: string
+  apiKey?: string
   model?: string
   baseUrl?: string
 }
 
-export function openai(options: OpenAiOptions): Provider {
-  const { apiKey, model: defaultModel, baseUrl } = options
+export function openai(options: OpenAiOptions = {}): Provider {
+  const { apiKey: providedKey, model: defaultModel, baseUrl } = options
+
+  // Read from env var if not provided (server-side only)
+  const resolveApiKey = (): string => {
+    const key =
+      providedKey ??
+      (typeof process !== "undefined" ? process.env?.OPENAI_API_KEY : undefined)
+    if (!key) {
+      throw new Error(
+        "OpenAI API key not found. Pass apiKey option or set OPENAI_API_KEY environment variable.",
+      )
+    }
+    return key
+  }
 
   return {
     name: "openai",
 
     async *stream(streamOptions: StreamOptions): AsyncIterable<StreamEvent> {
+      const apiKey = resolveApiKey()
       const { messages, systemPrompt, tools, model, signal } = streamOptions
       const resolvedModel = model ?? defaultModel ?? "gpt-4o"
 

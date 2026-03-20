@@ -2,8 +2,46 @@
 
 import { defineComponent } from "@fabrik/ui"
 import { z } from "zod"
-import { TbDropletFilled, TbWind } from "react-icons/tb"
-import { HiArrowTrendingUp, HiArrowTrendingDown } from "react-icons/hi2"
+
+// ---------------------------------------------------------------------------
+// Inline SVG Icons — no external icon library needed
+// ---------------------------------------------------------------------------
+
+function DropletIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z" />
+    </svg>
+  )
+}
+
+function WindIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.7 7.7A2.5 2.5 0 0 1 15 10H3" />
+      <path d="M9.6 4.6A2 2 0 0 1 11 8H3" />
+      <path d="M12.6 19.4A2 2 0 0 0 14 16H3" />
+    </svg>
+  )
+}
+
+function TrendUpIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="4 14 10 8 13 11 18 6" />
+      <polyline points="14 6 18 6 18 10" />
+    </svg>
+  )
+}
+
+function TrendDownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="4 6 10 12 13 9 18 14" />
+      <polyline points="14 14 18 14 18 10" />
+    </svg>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Weather Card
@@ -18,33 +56,61 @@ const weatherSchema = z.object({
 })
 
 function WeatherCard({ city, temp, condition, humidity, wind }: z.infer<typeof weatherSchema>) {
-  const icons: Record<string, string> = {
-    sunny: "\u2600\uFE0F", cloudy: "\u2601\uFE0F", rainy: "\uD83C\uDF27\uFE0F", snowy: "\u2744\uFE0F",
+  const conditionIcons: Record<string, string> = {
+    sunny: "\u2600\uFE0F",
+    cloudy: "\u2601\uFE0F",
+    rainy: "\uD83C\uDF27\uFE0F",
+    snowy: "\u2744\uFE0F",
   }
+
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden my-3">
+    <div
+      className="rounded-xl border border-border overflow-hidden my-3 shadow-sm"
+      style={{
+        background: "linear-gradient(135deg, var(--card) 0%, var(--accent) 100%)",
+      }}
+    >
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">{city}</p>
-            <div className="flex items-baseline mt-1">
-              <span className="text-[40px] font-extralight leading-none tracking-tighter">{temp}</span>
-              <span className="text-base text-muted-foreground ml-0.5">°F</span>
+            <p className="text-[11px] font-semibold text-muted-foreground tracking-widest uppercase">
+              {city}
+            </p>
+            <div className="flex items-baseline mt-2 gap-0.5">
+              <span className="text-[48px] font-extralight leading-none tracking-tighter tabular-nums">
+                {temp}
+              </span>
+              <span className="text-lg text-muted-foreground font-light">&deg;F</span>
             </div>
-            <p className="text-[13px] text-muted-foreground capitalize mt-1">{condition}</p>
+            <p className="text-[13px] text-muted-foreground capitalize mt-1.5 font-medium">
+              {condition}
+            </p>
           </div>
-          <span className="text-[40px] leading-none">{icons[condition] ?? "\uD83C\uDF21\uFE0F"}</span>
+          <span className="text-[44px] leading-none opacity-90 drop-shadow-sm">
+            {conditionIcons[condition.toLowerCase()] ?? "\uD83C\uDF21\uFE0F"}
+          </span>
         </div>
       </div>
+
       {(humidity !== undefined || wind) && (
-        <div className="flex gap-5 px-5 py-2.5 border-t border-border bg-muted/30 text-[11px] text-muted-foreground">
-          {humidity !== undefined && (
-            <span className="flex items-center gap-1"><TbDropletFilled className="w-3.5 h-3.5 text-blue-400" />{humidity}%</span>
-          )}
-          {wind && (
-            <span className="flex items-center gap-1"><TbWind className="w-3.5 h-3.5 text-muted-foreground" />{wind}</span>
-          )}
-        </div>
+        <>
+          <div className="mx-5 h-px bg-border" />
+          <div className="flex gap-6 px-5 py-3 text-xs text-muted-foreground">
+            {humidity !== undefined && (
+              <span className="flex items-center gap-1.5 font-medium">
+                <DropletIcon className="w-3.5 h-3.5 text-blue-400" />
+                <span className="tabular-nums">{humidity}%</span>
+                <span className="text-muted-foreground/60 font-normal">humidity</span>
+              </span>
+            )}
+            {wind && (
+              <span className="flex items-center gap-1.5 font-medium">
+                <WindIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>{wind}</span>
+              </span>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
@@ -71,26 +137,52 @@ const statsGridSchema = z.object({
   columns: z.number().optional(),
 })
 
-function StatsGrid({ stats, columns = 2 }: z.infer<typeof statsGridSchema>) {
+function StatsGrid({ stats }: z.infer<typeof statsGridSchema>) {
   return (
-    <div className="grid gap-3 my-3" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))` }}>
-      {stats.map(stat => (
-        <div key={stat.label} className="rounded-xl border border-border bg-card px-5 py-4">
-          <p className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">{stat.label}</p>
-          <p className="text-[24px] font-semibold tracking-tight mt-1">{stat.value}</p>
-          {stat.change && (
-            <div className="flex items-center gap-1 mt-1.5">
-              {stat.changeType === "increase"
-                ? <HiArrowTrendingUp className="w-4 h-4 text-[var(--success,#10b981)]" />
-                : <HiArrowTrendingDown className="w-4 h-4 text-destructive" />
-              }
-              <span className={`text-[12px] font-medium ${stat.changeType === "increase" ? "text-[var(--success,#10b981)]" : "text-destructive"}`}>
-                {stat.change}
-              </span>
-            </div>
-          )}
-        </div>
-      ))}
+    <div
+      className="grid gap-3 my-3"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}
+    >
+      {stats.map((stat) => {
+        const isUp = stat.changeType === "increase"
+        return (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-border bg-card px-5 py-4 shadow-sm"
+          >
+            <p className="text-[11px] font-semibold text-muted-foreground tracking-widest uppercase">
+              {stat.label}
+            </p>
+            <p className="text-[28px] font-semibold tracking-tight mt-1 tabular-nums leading-tight">
+              {stat.value}
+            </p>
+            {stat.change && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span
+                  className="flex items-center justify-center w-5 h-5 rounded-full"
+                  style={{
+                    background: isUp
+                      ? "color-mix(in oklch, var(--success) 15%, transparent)"
+                      : "color-mix(in oklch, var(--destructive) 15%, transparent)",
+                  }}
+                >
+                  {isUp
+                    ? <TrendUpIcon className="w-3 h-3 text-[var(--success)]" />
+                    : <TrendDownIcon className="w-3 h-3 text-destructive" />
+                  }
+                </span>
+                <span
+                  className={`text-[12px] font-semibold tabular-nums ${
+                    isUp ? "text-[var(--success)]" : "text-destructive"
+                  }`}
+                >
+                  {stat.change}
+                </span>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -114,26 +206,45 @@ const tableSchema = z.object({
 
 function TableComponent({ headers, rows, caption }: z.infer<typeof tableSchema>) {
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden my-3">
+    <div className="rounded-xl border border-border bg-card overflow-hidden my-3 shadow-sm">
       {caption && (
         <div className="px-5 py-3.5 border-b border-border">
-          <h3 className="text-sm font-medium">{caption}</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{caption}</h3>
         </div>
       )}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border bg-muted/40">
-              {headers.map(h => (
-                <th key={h} className="px-5 py-2.5 text-left text-[11px] font-medium text-muted-foreground tracking-wide uppercase">{h}</th>
+            <tr
+              className="border-b-2 border-border"
+              style={{ background: "var(--muted)" }}
+            >
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground tracking-widest uppercase"
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody className="text-[13px]">
             {rows.map((row, i) => (
-              <tr key={i} className="border-b border-border last:border-0">
+              <tr
+                key={i}
+                className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"
+                style={i % 2 === 1 ? { background: "var(--muted)", opacity: 0.5 } : undefined}
+              >
                 {row.map((cell, j) => (
-                  <td key={j} className={`px-5 py-3 ${j === 0 ? "font-medium" : "text-muted-foreground"}`}>{cell}</td>
+                  <td
+                    key={j}
+                    className={`px-5 py-3.5 ${
+                      j === 0 ? "font-medium" : "text-muted-foreground"
+                    }`}
+                  >
+                    {cell}
+                  </td>
                 ))}
               </tr>
             ))}

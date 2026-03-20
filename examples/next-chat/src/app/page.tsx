@@ -1,16 +1,29 @@
 "use client"
 
+/**
+ * Client ↔ Server pattern
+ * -----------------------
+ * The client uses the `server()` adapter to stream from `/api/chat`.
+ * The API route (`src/app/api/chat/route.ts`) uses the `handler()` helper
+ * with whatever provider you choose — mock for demos, or a real LLM adapter
+ * like `openai({ model: "gpt-4o" })` in production.
+ *
+ * API keys never reach the browser. They stay in .env.local and are resolved
+ * automatically by the adapter on the server side.
+ */
+
 import { Fabrik, useChat, Message } from "@fabrik/ui/react"
-import { createMockProvider } from "@/lib/mock-provider"
+import { server } from "@fabrik/ui/server"
 import { demoLibrary } from "@/components/fabrik-components"
 import { useRef, useEffect } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import type { FabrikMessage, TextPart, ComponentPart, ThinkingPart, StepPart, AskPart, ChoiceAsk } from "@fabrik/ui"
-import { PiFeatherDuotone, PiPaperPlaneRightFill, PiSpinnerGapBold, PiCheckBold, PiXBold, PiCaretRightBold, PiCloudSunFill, PiChartBarFill, PiSquaresFourFill, PiTableFill, PiBrainFill } from "react-icons/pi"
+import type { FabrikMessage, TextPart, ComponentPart, ThinkingPart, StepPart, AskPart, ArtifactPart, TextAsk, PermissionAsk } from "@fabrik/ui"
+import { ArtifactPanel, ConfirmDialog, ChoicePicker, TextInputDialog, PermissionDialog, InputArea } from "@fabrik/ui/react"
+import { PiFeatherDuotone, PiSpinnerGapBold, PiCheckBold, PiXBold, PiCaretRightBold, PiCloudSunFill, PiChartBarFill, PiSquaresFourFill, PiTableFill, PiBrainFill, PiWarningCircleFill, PiListChecksFill, PiCursorTextFill, PiShieldCheckFill, PiCodeFill, PiBrowserFill, PiGitDiffFill, PiEnvelopeFill, PiChartLineFill } from "react-icons/pi"
 
 const spring = { type: "spring" as const, damping: 30, stiffness: 300 }
 
-const provider = createMockProvider()
+const provider = server({ url: "/api/chat" })
 
 export default function Home() {
   return (
@@ -37,7 +50,7 @@ function Header() {
 }
 
 function ChatView() {
-  const { messages, isLoading, input, send, status } = useChat()
+  const { messages, isLoading, status } = useChat()
   const reduced = useReducedMotion()
   const scrollRef = useRef<HTMLDivElement>(null)
   const autoScroll = useRef(true)
@@ -83,30 +96,9 @@ function ChatView() {
 
       {/* Input */}
       <div className="shrink-0 border-t border-border px-5 py-3">
-        <form onSubmit={e => { e.preventDefault(); send() }} className="mx-auto max-w-[660px]">
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-card p-1.5 pl-3.5 focus-within:ring-2 focus-within:ring-ring/20 transition-shadow">
-            <textarea
-              value={input.value}
-              onChange={e => input.set(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send() } }}
-              placeholder="Message fabrik..."
-              rows={1}
-              disabled={streaming}
-              className="flex-1 resize-none bg-transparent py-2 text-[14px] leading-relaxed placeholder:text-muted-foreground/50 focus:outline-none font-sans"
-            />
-            <button
-              type="submit"
-              disabled={!input.value.trim() || streaming}
-              aria-label="Send message"
-              className="shrink-0 h-8 w-8 rounded-lg bg-foreground text-primary-foreground flex items-center justify-center disabled:opacity-20 transition-opacity hover:opacity-80"
-            >
-              {streaming
-                ? <PiSpinnerGapBold className="w-4 h-4 animate-spin" />
-                : <PiPaperPlaneRightFill className="w-3.5 h-3.5" />
-              }
-            </button>
-          </div>
-        </form>
+        <div className="mx-auto max-w-[660px]">
+          <InputArea placeholder="Message fabrik..." />
+        </div>
       </div>
     </>
   )
@@ -132,11 +124,12 @@ function AssistantBlock({ message }: { message: FabrikMessage }) {
       <div className="flex-1 min-w-0 space-y-2 pt-0.5">
         {message.parts.map((part, i) => {
           switch (part.type) {
-            case "text": return <p key={i} className="text-[14px] leading-[1.7] text-foreground">{(part as TextPart).text}</p>
+            case "text": return <Message key={i} className="text-[14px] leading-[1.7] text-foreground" message={{ id: `${message.id}-text-${i}`, role: "assistant", parts: [part], createdAt: "" }} />
             case "component": return <CompRender key={i} part={part as ComponentPart} />
             case "thinking": return <ThinkBlock key={i} part={part as ThinkingPart} />
             case "step": return <StepLine key={i} part={part as StepPart} />
             case "ask": return <AskBlock key={i} part={part as AskPart} />
+            case "artifact": return <ArtifactPanel key={i} artifact={part as ArtifactPart} />
             default: return null
           }
         })}
@@ -205,21 +198,34 @@ function StepLine({ part }: { part: StepPart }) {
 function AskBlock({ part }: { part: AskPart }) {
   const { respond } = useChat()
   if (part.status !== "pending") return null
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 text-[13px]">
-      <p className="font-medium">{part.config.title}</p>
-      {"options" in part.config && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {(part.config as ChoiceAsk).options.map((o) => (
-            <button key={o.value} onClick={() => respond(part.id, o.value)}
-              className="rounded-full border border-border px-3 py-1 text-[12px] hover:bg-accent transition-colors">
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  const cfg = part.config
+  switch (cfg.type) {
+    case "confirm":
+      return <ConfirmDialog config={cfg} onRespond={(confirmed) => respond(part.id, confirmed)} />
+    case "choice":
+    case "multi_choice":
+      return <ChoicePicker config={cfg} onRespond={(value) => respond(part.id, value)} />
+    case "text":
+      return (
+        <TextInputDialog
+          title={(cfg as TextAsk).title}
+          message={(cfg as TextAsk).message}
+          placeholder={(cfg as TextAsk).placeholder}
+          onRespond={(text) => respond(part.id, text)}
+        />
+      )
+    case "permission":
+      return (
+        <PermissionDialog
+          title={(cfg as PermissionAsk).title}
+          message={(cfg as PermissionAsk).message}
+          resource={(cfg as PermissionAsk).resource}
+          onRespond={(granted) => respond(part.id, granted)}
+        />
+      )
+    default:
+      return null
+  }
 }
 
 function Dots() {
@@ -256,14 +262,23 @@ function EmptyState() {
       </div>
       <h2 className="text-[16px] font-semibold tracking-tight">How can I help you?</h2>
       <p className="text-[13px] text-muted-foreground mt-1.5 max-w-sm leading-relaxed">
-        I can show you weather, charts, dashboards, tables — or just chat.
+        I can show you weather, charts, dashboards, tables, artifacts, elicitations — or just chat.
       </p>
       <div className="flex gap-2 mt-6 flex-wrap justify-center">
+        <Pill icon={<PiGitDiffFill />} text="Code diff" />
         <Pill icon={<PiCloudSunFill />} text="Show me the weather" />
         <Pill icon={<PiChartBarFill />} text="Revenue chart" />
         <Pill icon={<PiSquaresFourFill />} text="Dashboard stats" />
         <Pill icon={<PiTableFill />} text="Data table" />
+        <Pill icon={<PiBrowserFill />} text="Show artifact" />
+        <Pill icon={<PiCodeFill />} text="Code example" />
         <Pill icon={<PiBrainFill />} text="Think deeply" />
+        <Pill icon={<PiWarningCircleFill />} text="Confirm something" />
+        <Pill icon={<PiListChecksFill />} text="Multi choice" />
+        <Pill icon={<PiCursorTextFill />} text="Ask me something" />
+        <Pill icon={<PiShieldCheckFill />} text="Permission request" />
+        <Pill icon={<PiEnvelopeFill />} text="Write an email" />
+        <Pill icon={<PiChartLineFill />} text="Stock data" />
       </div>
     </div>
   )

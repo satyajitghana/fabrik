@@ -109,7 +109,7 @@ export function Fab({
             exit={{ opacity: 0, scale: 0.95, y: 12 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
-              "fixed z-50",
+              "fixed z-[9998]",
               isMobile
                 ? "inset-0"
                 : cn(
@@ -207,7 +207,7 @@ export function Fab({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className={cn(
-          "fixed z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg",
+          "fixed z-[9999] flex h-14 w-14 items-center justify-center rounded-full shadow-lg",
           "bg-[var(--primary)] text-[var(--primary-foreground)]",
           "transition-shadow duration-200 hover:shadow-xl",
           "bottom-5",

@@ -19,6 +19,7 @@ export type Part =
   | StepPart
   | ImagePart
   | AskPart
+  | ArtifactPart
 
 export interface TextPart {
   type: "text"
@@ -62,6 +63,15 @@ export interface AskPart {
   config: AskConfig
   response?: unknown
   status: "pending" | "answered" | "cancelled"
+}
+
+export interface ArtifactPart {
+  type: "artifact"
+  id: string
+  title: string
+  language: string // "html", "typescript", "python", "markdown", "svg", etc.
+  content: string
+  status: "streaming" | "done"
 }
 
 export type PartStatus = "pending" | "streaming" | "done" | "error"
@@ -159,6 +169,10 @@ export type StreamEvent =
   // Steps (auto-generated from tool calls)
   | { type: "step_start"; id: string; title: string }
   | { type: "step_done"; id: string; stepStatus: StepStatus; durationMs: number }
+  // Artifacts
+  | { type: "artifact_start"; id: string; title: string; language: string }
+  | { type: "artifact_delta"; id: string; delta: string }
+  | { type: "artifact_done"; id: string }
   // Elicitation
   | { type: "ask"; id: string; config: AskConfig }
   // Internal: raw tool calls (not exposed to developer, used by client)

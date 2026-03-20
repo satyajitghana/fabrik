@@ -15,15 +15,30 @@ export function StreamingCode({ code, lang = "tsx", filename }: StreamingCodePro
   const containerRef = useRef<HTMLDivElement>(null)
   const inView = useInView(containerRef, { once: true, margin: "-40px" })
   const [fullHtml, setFullHtml] = useState("")
+  const [partialHtml, setPartialHtml] = useState("")
   const [visibleChars, setVisibleChars] = useState(reduced ? code.length : 0)
   const [streamDone, setStreamDone] = useState(reduced ? true : false)
   const [started, setStarted] = useState(false)
   const trimmed = code.trim()
+  const lastHighlightedRef = useRef(0)
 
   // Pre-render full syntax highlighting
   useEffect(() => {
     codeToHtml(trimmed, { lang, theme: "vitesse-dark" }).then(setFullHtml)
   }, [trimmed, lang])
+
+  // Incrementally highlight partial code (on each new line)
+  useEffect(() => {
+    if (!started || streamDone || reduced) return
+    const visible = trimmed.slice(0, visibleChars)
+    // Only re-highlight when a new line is completed (performance)
+    const lineCount = visible.split("\n").length
+    const lastLineCount = trimmed.slice(0, lastHighlightedRef.current).split("\n").length
+    if (lineCount > lastLineCount || visibleChars >= trimmed.length) {
+      lastHighlightedRef.current = visibleChars
+      codeToHtml(visible || " ", { lang, theme: "vitesse-dark" }).then(setPartialHtml)
+    }
+  }, [visibleChars, started, streamDone, trimmed, lang, reduced])
 
   // Start streaming when in view
   useEffect(() => {
@@ -76,8 +91,19 @@ export function StreamingCode({ code, lang = "tsx", filename }: StreamingCodePro
               className="[&_pre]:!bg-transparent [&_code]:!bg-transparent"
               dangerouslySetInnerHTML={{ __html: fullHtml }}
             />
+          ) : partialHtml ? (
+            // Show syntax-highlighted partial code with cursor
+            <div className="relative">
+              <div
+                className="[&_pre]:!bg-transparent [&_code]:!bg-transparent"
+                dangerouslySetInnerHTML={{ __html: partialHtml }}
+              />
+              {!streamDone && started && (
+                <span className="absolute inline-block w-[2px] h-[1.1em] bg-primary animate-[cursor-blink_1s_steps(2)_infinite]" style={{ bottom: "1.2em", right: "auto" }} />
+              )}
+            </div>
           ) : (
-            // Show streaming plain text with cursor
+            // Fallback: plain text before first highlight runs
             <pre className="!bg-transparent font-mono whitespace-pre">
               <code className="text-white/70">
                 {visibleCode}

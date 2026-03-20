@@ -13,15 +13,21 @@ import type {
   ThinkingPart,
   StepPart,
   AskPart,
+  ArtifactPart,
   FabrikMessage,
+  TextAsk,
+  PermissionAsk,
 } from "../core/types"
 import { InputArea } from "./input-area"
 import { Thinking } from "./thinking"
 import { StepList } from "./step-list"
 import { ChoicePicker } from "./choice-picker"
 import { ConfirmDialog } from "./confirm-dialog"
+import { TextInputDialog } from "./text-input-dialog"
+import { PermissionDialog } from "./permission-dialog"
 import { TypingDots } from "./typing-dots"
 import { MessageActions } from "./message-actions"
+import { ArtifactPanel } from "./artifact-panel"
 import { cn } from "./utils"
 
 // ---------------------------------------------------------------------------
@@ -116,8 +122,32 @@ export function Chat({
         />
       )
     }
+    if (cfg.type === "text") {
+      return (
+        <TextInputDialog
+          title={(cfg as TextAsk).title}
+          message={(cfg as TextAsk).message}
+          placeholder={(cfg as TextAsk).placeholder}
+          onRespond={(text) => respond(part.id, text)}
+        />
+      )
+    }
+    if (cfg.type === "permission") {
+      return (
+        <PermissionDialog
+          title={(cfg as PermissionAsk).title}
+          message={(cfg as PermissionAsk).message}
+          resource={(cfg as PermissionAsk).resource}
+          onRespond={(granted) => respond(part.id, granted)}
+        />
+      )
+    }
     return null
   }
+
+  const renderArtifact = (part: ArtifactPart) => (
+    <ArtifactPanel artifact={part} />
+  )
 
   const isEmpty = messages.length === 0
 
@@ -161,6 +191,7 @@ export function Chat({
                         renderThinking={renderThinking}
                         renderStep={renderStep}
                         renderAsk={renderAsk}
+                        renderArtifact={renderArtifact}
                         onFeedback={onFeedback}
                         collectText={collectTextFromMessage}
                       />
@@ -172,8 +203,11 @@ export function Chat({
                 {isLoading &&
                   messages.length > 0 &&
                   messages[messages.length - 1]!.role === "user" && (
-                    <div className="mb-6 flex items-start gap-3">
-                      <AssistantAvatar />
+                    <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:gap-3">
+                      <div className="flex items-center gap-2 mb-1.5 sm:mb-0 sm:block">
+                        <AssistantAvatar />
+                        <span className="text-xs font-medium text-[var(--muted-foreground)] sm:hidden">Assistant</span>
+                      </div>
                       <TypingDots />
                     </div>
                   )}
@@ -204,13 +238,14 @@ function UserBubble({ msg }: { msg: FabrikMessage }) {
   return (
     <div
       className={cn(
-        "max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5",
-        "bg-[var(--primary)] text-[var(--primary-foreground)]",
+        "max-w-[75%] rounded-2xl rounded-br-sm px-4 py-2.5",
+        "bg-[var(--foreground)] text-[var(--background)]",
+        "shadow-sm",
       )}
     >
       <Message
         message={msg}
-        className="text-sm leading-relaxed [&_p]:text-inherit"
+        className="text-[14px] leading-[1.6] [&_p]:text-inherit"
       />
     </div>
   )
@@ -221,6 +256,7 @@ function AssistantMessage({
   renderThinking,
   renderStep,
   renderAsk,
+  renderArtifact,
   onFeedback,
   collectText,
 }: {
@@ -228,12 +264,16 @@ function AssistantMessage({
   renderThinking: (part: ThinkingPart) => ReactNode
   renderStep: (part: StepPart) => ReactNode
   renderAsk: (part: AskPart) => ReactNode
+  renderArtifact: (part: ArtifactPart) => ReactNode
   onFeedback?: (messageId: string, type: "up" | "down") => void
   collectText: (msg: FabrikMessage) => string
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <AssistantAvatar />
+    <div className="flex flex-col sm:flex-row sm:items-start sm:gap-3">
+      <div className="flex items-center gap-2 mb-1.5 sm:mb-0 sm:block">
+        <AssistantAvatar />
+        <span className="text-xs font-medium text-[var(--muted-foreground)] sm:hidden">Assistant</span>
+      </div>
       <div className="min-w-0 flex-1">
         <Message
           message={msg}
@@ -244,6 +284,7 @@ function AssistantMessage({
           renderThinking={renderThinking}
           renderStep={renderStep}
           renderAsk={renderAsk}
+          renderArtifact={renderArtifact}
         />
         {/* Actions row */}
         <div className="mt-1.5">
@@ -291,6 +332,8 @@ function EmptyState({ welcome }: { welcome?: ReactNode }) {
     "What can you help me with?",
     "Tell me about yourself",
     "Show me an example",
+    "Show artifact",
+    "Code example",
   ]
 
   const handleSuggestion = useCallback(

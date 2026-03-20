@@ -9,6 +9,14 @@ interface HandlerRequestBody {
 /**
  * Creates a Next.js-compatible API route handler that streams LLM responses
  * as server-sent events.
+ *
+ * @example
+ * ```ts
+ * import { openai } from "@fabrik/ui/openai"
+ * import { handler } from "@fabrik/ui/server"
+ *
+ * export const POST = handler({ provider: openai({ model: "gpt-4o" }) })
+ * ```
  */
 export function handler(options: {
   provider: Provider

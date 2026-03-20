@@ -52,4 +52,8 @@ export default defineConfig([
     ...shared,
     entry: { "pages/index": "src/pages/index.ts" },
   },
+  {
+    ...shared,
+    entry: { "chat/index": "src/chat/index.ts" },
+  },
 ])

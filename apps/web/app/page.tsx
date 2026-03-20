@@ -4,6 +4,7 @@ import { PiFeatherDuotone, PiLightningFill, PiPaintBrushFill, PiPlugFill, PiChat
 import { useState, useRef } from "react"
 import { motion, useInView, useReducedMotion } from "motion/react"
 import { StreamingCode } from "@/components/streaming-code"
+import { DemoShowcase } from "@/components/demo-showcase"
 
 export default function Page() {
   return (
@@ -12,6 +13,7 @@ export default function Page() {
       <main id="main-content">
         <Hero />
         <CodeSection />
+        <DemoShowcase />
         <Features />
         <Examples />
         <CTASection />

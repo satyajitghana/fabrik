@@ -11,17 +11,33 @@ import type {
 // ---------------------------------------------------------------------------
 
 export interface GoogleOptions {
-  apiKey: string
+  apiKey?: string
   model?: string
 }
 
-export function google(options: GoogleOptions): Provider {
-  const { apiKey, model: defaultModel } = options
+export function google(options: GoogleOptions = {}): Provider {
+  const { apiKey: providedKey, model: defaultModel } = options
+
+  // Read from env var if not provided (server-side only)
+  const resolveApiKey = (): string => {
+    const key =
+      providedKey ??
+      (typeof process !== "undefined"
+        ? process.env?.GOOGLE_AI_API_KEY
+        : undefined)
+    if (!key) {
+      throw new Error(
+        "Google AI API key not found. Pass apiKey option or set GOOGLE_AI_API_KEY environment variable.",
+      )
+    }
+    return key
+  }
 
   return {
     name: "google",
 
     async *stream(streamOptions: StreamOptions): AsyncIterable<StreamEvent> {
+      const apiKey = resolveApiKey()
       const { messages, systemPrompt, tools, model, signal } = streamOptions
       const resolvedModel = model ?? defaultModel ?? "gemini-2.0-flash"
 
