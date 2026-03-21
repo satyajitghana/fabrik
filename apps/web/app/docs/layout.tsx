@@ -1,141 +1,52 @@
-"use client"
-
+import "fumadocs-ui/style.css"
+import "./docs.css"
+import { source } from "@/lib/source"
+import { DocsLayout } from "fumadocs-ui/layouts/docs"
+import { RootProvider } from "fumadocs-ui/provider/base"
 import type { ReactNode } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
-import { PiFeatherDuotone, PiListBold, PiXBold } from "react-icons/pi"
 
-const sections = [
-  {
-    title: "Getting Started",
-    items: [
-      { label: "Introduction", href: "/docs" },
-      { label: "Quickstart", href: "/docs/quickstart" },
-      { label: "Project Structure", href: "/docs/structure" },
-    ],
-  },
-  {
-    title: "Guide",
-    items: [
-      { label: "Providers", href: "/docs/providers" },
-      { label: "Components", href: "/docs/components" },
-      { label: "Generative UI", href: "/docs/generative-ui" },
-      { label: "Elicitations", href: "/docs/elicitations" },
-      { label: "Artifacts & Diffs", href: "/docs/artifacts" },
-      { label: "Streaming", href: "/docs/streaming" },
-    ],
-  },
-  {
-    title: "Reference",
-    items: [
-      { label: "API Reference", href: "/docs/api" },
-      { label: "Examples", href: "/docs/examples" },
-      { label: "Security", href: "/docs/security" },
-    ],
-  },
-]
-
-function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <nav className="space-y-6">
-      {sections.map((section) => (
-        <div key={section.title}>
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-2">
-            {section.title}
-          </h3>
-          <ul className="space-y-0.5">
-            {section.items.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onNavigate}
-                    className={`block px-2 py-1.5 text-[13px] rounded-md transition-colors ${
-                      isActive
-                        ? "text-foreground bg-muted font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      ))}
-    </nav>
-  )
-}
-
-export default function DocsLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
-
-  return (
-    <div className="min-h-dvh bg-background font-sans">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-14">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-lg bg-primary flex items-center justify-center">
-                <PiFeatherDuotone className="w-3 h-3 text-primary-foreground" />
-              </div>
-              <span className="text-sm font-bold tracking-tight">Fabrik UI</span>
-            </Link>
-            <span className="text-xs text-muted-foreground font-mono">/docs</span>
-          </div>
-          <div className="flex items-center gap-4 text-[13px]">
-            <Link href="/" className="hidden sm:block text-muted-foreground hover:text-foreground transition-colors">
-              Home
-            </Link>
-            <Link href="/playground" className="hidden sm:block text-muted-foreground hover:text-foreground transition-colors">
-              Playground
-            </Link>
-            <a
-              href="https://github.com"
-              className="hidden sm:block text-muted-foreground hover:text-foreground transition-colors"
-            >
-              GitHub
-            </a>
-            <button
-              className="lg:hidden"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label={mobileOpen ? "Close sidebar" : "Open sidebar"}
-            >
-              {mobileOpen ? <PiXBold className="w-5 h-5" /> : <PiListBold className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto flex">
-        {/* Desktop sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r border-border py-8 px-4 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
-          <SidebarContent pathname={pathname} />
-        </aside>
-
-        {/* Mobile sidebar overlay */}
-        {mobileOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-              onClick={() => setMobileOpen(false)}
-            />
-            <aside className="fixed inset-y-14 left-0 z-50 w-72 bg-background border-r border-border py-6 px-4 overflow-y-auto lg:hidden">
-              <SidebarContent pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-            </aside>
-          </>
-        )}
-
-        {/* Content */}
-        <main className="flex-1 min-w-0 px-6 lg:px-12 py-10 max-w-3xl">
-          {children}
-        </main>
-      </div>
-    </div>
+    <RootProvider theme={{ enabled: false }}>
+      <DocsLayout
+        tree={source.pageTree}
+        nav={{
+          title: (
+            <>
+              <svg width="24" height="24" viewBox="0 0 128 128" className="shrink-0">
+                <rect width="128" height="128" rx="28" fill="#0d9488"/>
+                <g transform="translate(24,24) scale(0.3125)">
+                  <path d="M215.8,119.6l-69.26,70.06a8,8,0,0,1-5.65,2.34H64.2V115.31a8,8,0,0,1,2.34-5.65L112.2,64.52V144l24-24Z" opacity="0.3" fill="white"/>
+                  <path d="M221.28,34.75a64,64,0,0,0-90.49,0L60.69,104A15.9,15.9,0,0,0,56,115.31v73.38L26.34,218.34a8,8,0,0,0,11.32,11.32L67.32,200H140.7A15.92,15.92,0,0,0,152,195.32l0,0,69.23-70a64,64,0,0,0,0-90.57ZM142.07,46.06A48,48,0,0,1,211.79,112H155.33l34.35-34.34a8,8,0,0,0-11.32-11.32L120,124.69V67.87ZM72,115.35l32-31.67v57l-32,32ZM140.7,184H83.32l56-56h56.74Z" fill="white"/>
+                </g>
+              </svg>
+              <span className="font-semibold">Fabrik UI</span>
+            </>
+          ),
+          url: "/",
+        }}
+        links={[
+          {
+            type: "icon",
+            url: "https://github.com",
+            label: "GitHub",
+            text: "GitHub",
+            icon: (
+              <svg
+                role="img"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="size-5"
+              >
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+              </svg>
+            ),
+            external: true,
+          },
+        ]}
+      >
+        {children}
+      </DocsLayout>
+    </RootProvider>
   )
 }

@@ -1,0 +1,172 @@
+---
+title: Components
+description: Chat UI components and defineComponent for generative UI
+---
+
+## Chat UI
+
+Fabrik ships two drop-in chat surfaces:
+
+### Full-page chat
+
+```tsx title="app/page.tsx"
+import { Fabrik, Chat } from "@fabrik/ui/react"
+
+export default function Page() {
+  return (
+    <Fabrik provider={provider}>
+      <Chat />
+    </Fabrik>
+  )
+}
+```
+
+`<Chat>` renders a full message list with input area, auto-scroll, typing indicators, and elicitation UI. Pass `sidebar` to enable a thread sidebar.
+
+### Props
+
+| Prop | Type | Description |
+|---|---|---|
+| `sidebar` | `boolean` | Show thread sidebar |
+| `placeholder` | `string` | Input placeholder text |
+| `welcome` | `ReactNode` | Custom empty state |
+| `className` | `string` | Container class |
+| `onFeedback` | `(messageId, type) => void` | Thumbs up/down callback |
+
+### Floating action button
+
+```tsx title="app/page.tsx"
+import { Fabrik, Fab } from "@fabrik/ui/react"
+
+export default function Page() {
+  return (
+    <Fabrik provider={provider}>
+      <Fab />
+    </Fabrik>
+  )
+}
+```
+
+`<Fab>` renders a floating button in the corner that expands into a chat panel. Ideal for copilot and widget patterns.
+
+## defineComponent
+
+Register React components the LLM can render:
+
+```tsx title="components/stock-chart.tsx"
+import { defineComponent } from "@fabrik/ui"
+import { z } from "zod"
+
+export const stockChart = defineComponent({
+  name: "stock_chart",
+  description: "Displays stock price history as a line chart",
+  schema: z.object({
+    symbol: z.string(),
+    prices: z.array(z.object({
+      date: z.string(),
+      price: z.number(),
+    })),
+    change: z.number(),
+  }),
+  component: ({ symbol, prices, change }) => (
+    <div className="rounded-xl border p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold">{symbol}</h3>
+        <span className={change >= 0 ? "text-green-600" : "text-red-600"}>
+          {change >= 0 ? "+" : ""}{change}%
+        </span>
+      </div>
+      {/* Render your chart here */}
+    </div>
+  ),
+})
+```
+
+### Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | Yes | Tool name sent to the LLM (use snake_case) |
+| `description` | `string` | Yes | Tells the LLM when to use this component |
+| `schema` | `ZodType<T>` | Yes | Props schema — converted to JSON Schema for the LLM |
+| `component` | `ComponentType<T>` | Yes | React component that renders with validated props |
+| `loading` | `ComponentType<Partial<T>>` | No | Shown while props are streaming |
+| `stepTitle` | `string \| (args: T) => string` | No | Label in the step indicator |
+
+### Passing components to Fabrik
+
+```tsx title="app/page.tsx"
+import { Fabrik, Chat } from "@fabrik/ui/react"
+import { weatherCard } from "@/components/weather-card"
+import { stockChart } from "@/components/stock-chart"
+
+export default function Page() {
+  return (
+    <Fabrik provider={provider} components={[weatherCard, stockChart]}>
+      <Chat />
+    </Fabrik>
+  )
+}
+```
+
+## createLibrary
+
+Group components into reusable collections:
+
+```ts title="lib/components.ts"
+import { createLibrary } from "@fabrik/ui"
+import { weatherCard } from "@/components/weather-card"
+import { stockChart } from "@/components/stock-chart"
+import { dataTable } from "@/components/data-table"
+
+export const components = createLibrary([
+  weatherCard,
+  stockChart,
+  dataTable,
+])
+```
+
+`createLibrary` validates that all component names are unique and returns a frozen array.
+
+## useChat hook
+
+Build custom chat UI with the `useChat` hook:
+
+```tsx title="components/custom-chat.tsx"
+"use client"
+import { useChat } from "@fabrik/ui/react"
+
+export function CustomChat() {
+  const { messages, input, send, isLoading, status } = useChat()
+
+  return (
+    <div>
+      {messages.map((msg) => (
+        <div key={msg.id}>{msg.role}: {msg.parts.length} parts</div>
+      ))}
+      <input
+        value={input.value}
+        onChange={(e) => input.set(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && send()}
+      />
+    </div>
+  )
+}
+```
+
+### Return values
+
+| Field | Type | Description |
+|---|---|---|
+| `messages` | `FabrikMessage[]` | All messages in the current thread |
+| `isLoading` | `boolean` | True while streaming or waiting |
+| `status` | `"idle" \| "streaming" \| "waiting" \| "error"` | Thread status |
+| `input.value` | `string` | Current input text |
+| `input.set` | `(value: string) => void` | Update input |
+| `send` | `() => void` | Send the current input |
+| `cancel` | `() => void` | Cancel the active stream |
+| `retry` | `() => void` | Retry the last user message |
+| `respond` | `(askId, value) => void` | Respond to an elicitation |
+| `threadId` | `string` | Current thread ID |
+| `newThread` | `() => void` | Start a new thread |
+| `switchThread` | `(id: string) => void` | Switch to another thread |

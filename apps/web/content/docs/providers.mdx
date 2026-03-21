@@ -1,0 +1,122 @@
+---
+title: Providers
+description: Connect to OpenAI, Anthropic, Google, or any LLM via adapters
+---
+
+Providers are server-side adapters that translate between Fabrik's stream protocol and a specific LLM API. Each provider reads its API key from environment variables by default.
+
+## OpenAI
+
+```ts title="app/api/chat/route.ts"
+import { openai } from "@fabrik/ui/openai"
+import { handler } from "@fabrik/ui/server"
+
+export const POST = handler({
+  provider: openai({ model: "gpt-4o" }),
+})
+```
+
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+```
+
+### Options
+
+| Option | Type | Default |
+|---|---|---|
+| `model` | `string` | `"gpt-4o"` |
+| `apiKey` | `string` | `process.env.OPENAI_API_KEY` |
+| `baseUrl` | `string` | OpenAI default |
+
+## Anthropic
+
+```ts title="app/api/chat/route.ts"
+import { anthropic } from "@fabrik/ui/anthropic"
+import { handler } from "@fabrik/ui/server"
+
+export const POST = handler({
+  provider: anthropic({ model: "claude-sonnet-4-20250514" }),
+})
+```
+
+```bash title=".env.local"
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Options
+
+| Option | Type | Default |
+|---|---|---|
+| `model` | `string` | `"claude-sonnet-4-20250514"` |
+| `apiKey` | `string` | `process.env.ANTHROPIC_API_KEY` |
+
+## Google Gemini
+
+```ts title="app/api/chat/route.ts"
+import { google } from "@fabrik/ui/google"
+import { handler } from "@fabrik/ui/server"
+
+export const POST = handler({
+  provider: google({ model: "gemini-2.0-flash" }),
+})
+```
+
+```bash title=".env.local"
+GOOGLE_AI_API_KEY=AI...
+```
+
+### Options
+
+| Option | Type | Default |
+|---|---|---|
+| `model` | `string` | `"gemini-2.0-flash"` |
+| `apiKey` | `string` | `process.env.GOOGLE_AI_API_KEY` |
+
+## Vercel AI SDK
+
+Use any of the 53+ models supported by the AI SDK:
+
+```ts title="app/api/chat/route.ts"
+import { aiSdk } from "@fabrik/ui/ai-sdk"
+import { handler } from "@fabrik/ui/server"
+import { openai } from "@ai-sdk/openai"
+
+export const POST = handler({
+  provider: aiSdk({ model: openai("gpt-4o") }),
+})
+```
+
+This adapter wraps any AI SDK `LanguageModel`, giving you access to providers like Groq, Mistral, Cohere, and more.
+
+## Custom provider
+
+Build your own provider by implementing the `Provider` interface:
+
+```ts title="lib/my-provider.ts"
+import type { Provider, StreamOptions, StreamEvent } from "@fabrik/ui"
+
+export function myProvider(): Provider {
+  return {
+    name: "my-provider",
+    async *stream(options: StreamOptions): AsyncIterable<StreamEvent> {
+      yield { type: "start", runId: "run-1" }
+      yield { type: "text", delta: "Hello from custom provider!" }
+      yield { type: "done" }
+    },
+  }
+}
+```
+
+A provider must yield `StreamEvent` objects. At minimum: `start`, then content events, then `done`.
+
+## Client-side adapter
+
+On the client, use the `server()` adapter to connect to your API route:
+
+```tsx title="app/page.tsx"
+import { server } from "@fabrik/ui/server"
+
+const provider = server({ url: "/api/chat" })
+```
+
+This adapter POSTs messages and reads the SSE response stream. It works with any of the server-side providers above — the client code never changes when you switch LLMs.

@@ -1,0 +1,20 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "quickstart",
+    "structure",
+    "---Guide---",
+    "providers",
+    "components",
+    "generative-ui",
+    "elicitations",
+    "artifacts",
+    "streaming",
+    "---Reference---",
+    "api",
+    "examples",
+    "security"
+  ]
+}

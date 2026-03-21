@@ -1,0 +1,78 @@
+---
+title: Project Structure
+description: How a Fabrik UI project is organized
+---
+
+## Directory layout
+
+A typical Fabrik project follows standard Next.js conventions:
+
+```
+my-app/
+├── app/
+│   ├── api/chat/
+│   │   └── route.ts          # Server route — LLM runs here
+│   ├── layout.tsx
+│   └── page.tsx               # Client page — UI renders here
+├── components/
+│   └── weather-card.tsx       # Your generative UI components
+├── .env.local                 # API keys (never committed)
+├── package.json
+└── tsconfig.json
+```
+
+## SDK entry points
+
+Fabrik UI ships multiple entry points so you only import what you need:
+
+| Import path | Purpose | Environment |
+|---|---|---|
+| `@fabrik/ui` | `defineComponent`, `defineTool`, types | Both |
+| `@fabrik/ui/react` | `Fabrik`, `Chat`, `Fab`, `useChat`, `Message` | Client |
+| `@fabrik/ui/server` | `handler`, `server` adapter | Server + Client |
+| `@fabrik/ui/openai` | OpenAI provider | Server |
+| `@fabrik/ui/anthropic` | Anthropic provider | Server |
+| `@fabrik/ui/google` | Google Gemini provider | Server |
+| `@fabrik/ui/ai-sdk` | Vercel AI SDK adapter | Server |
+| `@fabrik/ui/custom` | Custom provider adapter | Server |
+| `@fabrik/ui/chat` | Chat UI primitives | Client |
+| `@fabrik/ui/pages` | Multi-page routing | Client |
+| `@fabrik/ui/testing` | Mock provider for tests | Both |
+| `@fabrik/ui/styles.css` | Base styles | Client |
+
+## Server / client split
+
+Fabrik enforces a strict separation:
+
+- **Server route** (`app/api/chat/route.ts`) — holds the LLM provider, API keys, and system prompt. Runs server-side only.
+- **Client page** — uses the `server()` adapter to POST messages to the route. Receives SSE events and renders components.
+
+This means API keys never reach the browser. The client only sees streamed events (text deltas, component props, elicitations).
+
+## Component registration
+
+Components are defined with `defineComponent()` and passed to `<Fabrik>`:
+
+```tsx title="components/weather-card.tsx"
+import { defineComponent } from "@fabrik/ui"
+import { z } from "zod"
+
+export const weatherCard = defineComponent({
+  name: "weather_card",
+  description: "Shows current weather for a city",
+  schema: z.object({
+    city: z.string(),
+    temp: z.number(),
+    condition: z.string(),
+  }),
+  component: ({ city, temp, condition }) => (
+    <div className="rounded-xl border p-4">
+      <h3 className="font-bold">{city}</h3>
+      <p className="text-3xl">{temp}°F</p>
+      <p>{condition}</p>
+    </div>
+  ),
+})
+```
+
+The `schema` is converted to JSON Schema and sent to the LLM as a tool definition. When the LLM calls the tool, the props are validated against your schema and your component renders.

@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "collections/*": [".source/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [
@@ -17,6 +18,8 @@
     "next.config.ts",
     "**/*.ts",
     "**/*.tsx",
+    "content/**/*.mdx",
+    ".source/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]

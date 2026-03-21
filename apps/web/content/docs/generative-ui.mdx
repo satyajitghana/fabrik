@@ -1,0 +1,101 @@
+---
+title: Generative UI
+description: How the LLM renders your React components
+---
+
+Generative UI means the LLM decides which components to render based on the conversation. Instead of returning plain text, it calls tools that map to your React components.
+
+## How it works
+
+1. You define components with `defineComponent()` — each has a name, description, and Zod schema.
+2. Fabrik converts the schema to JSON Schema and registers it as a tool with the LLM.
+3. When the user sends a message, the LLM decides whether to respond with text or call a component tool.
+4. If it calls a tool, Fabrik validates the props against your schema and renders your component.
+
+```
+User: "Show me the weather in Tokyo"
+  ↓
+LLM decides to call: show_weather_card({ city: "Tokyo", temp: 72, condition: "Sunny" })
+  ↓
+Fabrik validates props with Zod, renders <WeatherCard city="Tokyo" temp={72} condition="Sunny" />
+```
+
+## Streaming props
+
+Component props stream progressively. While the LLM is generating the JSON arguments, Fabrik emits `component_start`, `component_delta`, and `component_done` events.
+
+If you provide a `loading` component, it renders with partial props during streaming:
+
+```tsx title="components/dashboard.tsx"
+import { defineComponent } from "@fabrik/ui"
+import { z } from "zod"
+
+const dashboard = defineComponent({
+  name: "dashboard",
+  description: "Displays a statistics dashboard",
+  schema: z.object({
+    title: z.string(),
+    stats: z.array(z.object({
+      label: z.string(),
+      value: z.number(),
+    })),
+  }),
+  component: ({ title, stats }) => (
+    <div className="grid gap-4">
+      <h2 className="text-xl font-bold">{title}</h2>
+      <div className="grid grid-cols-3 gap-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">{s.label}</p>
+            <p className="text-2xl font-bold">{s.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
+  loading: ({ title }) => (
+    <div className="animate-pulse">
+      <div className="h-6 w-48 rounded bg-muted" />
+      {title && <p className="mt-2 text-sm">{title}</p>}
+    </div>
+  ),
+})
+```
+
+## Multi-step tool calls
+
+The LLM can chain multiple tool calls in a single response. Fabrik processes them sequentially and renders step indicators:
+
+```
+User: "Compare AAPL and GOOGL stock prices"
+  ↓
+LLM: calls fetch_stock("AAPL"), then fetch_stock("GOOGL"), then renders comparison_chart(...)
+  ↓
+Fabrik: shows step progress → renders final component
+```
+
+Configure the maximum number of sequential tool calls with `maxSteps`:
+
+```tsx
+<Fabrik provider={provider} maxSteps={5}>
+  <Chat />
+</Fabrik>
+```
+
+The default is 10 steps.
+
+## The message model
+
+Each `FabrikMessage` contains an array of `Part` objects:
+
+| Part type | Description |
+|---|---|
+| `text` | Markdown text from the LLM |
+| `component` | A rendered React component with validated props |
+| `thinking` | Chain-of-thought reasoning (collapsed by default) |
+| `step` | Tool call progress indicator |
+| `image` | An inline image |
+| `ask` | An elicitation prompt |
+| `artifact` | A code block or HTML preview |
+
+A single assistant message can contain multiple parts — for example, text followed by a component followed by more text. This lets the LLM interleave explanation with rendered UI.

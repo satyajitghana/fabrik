@@ -1,0 +1,93 @@
+---
+title: Quickstart
+description: Get a working generative UI chat in under 5 minutes
+---
+
+## 1. Install
+
+```bash
+pnpm add @fabrik/ui zod motion
+```
+
+## 2. Create the server route
+
+This file handles LLM communication. API keys are read from environment variables.
+
+```ts title="app/api/chat/route.ts"
+import { openai } from "@fabrik/ui/openai"
+import { handler } from "@fabrik/ui/server"
+
+export const POST = handler({
+  provider: openai({ model: "gpt-4o" })
+  // Reads OPENAI_API_KEY from .env.local
+})
+```
+
+## 3. Create the client page
+
+```tsx title="app/page.tsx"
+"use client"
+import { Fabrik, Chat } from "@fabrik/ui/react"
+import { server } from "@fabrik/ui/server"
+import { defineComponent } from "@fabrik/ui"
+import { z } from "zod"
+
+const provider = server({ url: "/api/chat" })
+
+const weatherCard = defineComponent({
+  name: "weather_card",
+  description: "Shows weather for a city",
+  schema: z.object({
+    city: z.string(),
+    temp: z.number(),
+    condition: z.string(),
+  }),
+  component: ({ city, temp, condition }) => (
+    <div className="rounded-xl border p-4">
+      <h3 className="font-bold">{city}</h3>
+      <p className="text-3xl">{temp}°F</p>
+      <p className="text-muted-foreground">{condition}</p>
+    </div>
+  ),
+})
+
+export default function Page() {
+  return (
+    <Fabrik provider={provider} components={[weatherCard]}>
+      <Chat />
+    </Fabrik>
+  )
+}
+```
+
+## 4. Add your API key
+
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+```
+
+## 5. Run
+
+```bash
+pnpm dev
+```
+
+Open `http://localhost:3000` and ask "Show me the weather in San Francisco".
+
+## Switching providers
+
+Change one import in your server route:
+
+```ts title="Anthropic"
+import { anthropic } from "@fabrik/ui/anthropic"
+export const POST = handler({ provider: anthropic({ model: "claude-sonnet-4-20250514" }) })
+// env: ANTHROPIC_API_KEY
+```
+
+```ts title="Google Gemini"
+import { google } from "@fabrik/ui/google"
+export const POST = handler({ provider: google({ model: "gemini-2.0-flash" }) })
+// env: GOOGLE_AI_API_KEY
+```
+
+The client code never changes.

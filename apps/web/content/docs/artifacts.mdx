@@ -1,0 +1,95 @@
+---
+title: Artifacts
+description: HTML previews, code blocks, and GitHub-style code diffs
+---
+
+Artifacts are rich content blocks that the LLM can produce mid-conversation. Fabrik supports two artifact types: live HTML previews and syntax-highlighted code blocks.
+
+## HTML artifacts
+
+When the LLM produces an HTML artifact, Fabrik renders it inside a sandboxed iframe. Users can interact with the content without leaving the chat.
+
+The `ArtifactPanel` component handles rendering:
+
+```tsx
+import { ArtifactPanel } from "@fabrik/ui/react"
+```
+
+### Stream events
+
+```
+artifact_start  → { id, title, language: "html" }
+artifact_delta  → { id, delta: "<div>..." }
+artifact_done   → { id }
+```
+
+Content streams progressively — the iframe updates as chunks arrive.
+
+## Code artifacts
+
+Code artifacts render with syntax highlighting powered by Shiki. Supported languages include TypeScript, JavaScript, Python, Rust, Go, and more.
+
+```json
+{
+  "type": "artifact",
+  "id": "art-1",
+  "title": "fibonacci.ts",
+  "language": "typescript",
+  "content": "function fib(n: number): number {\n  if (n <= 1) return n\n  return fib(n - 1) + fib(n - 2)\n}"
+}
+```
+
+## Code diffs
+
+The `CodeDiff` component renders GitHub-style diffs with accept/reject actions:
+
+```tsx
+import { CodeDiff } from "@fabrik/ui/react"
+```
+
+### Props
+
+| Prop | Type | Description |
+|---|---|---|
+| `original` | `string` | Original code |
+| `modified` | `string` | Modified code |
+| `language` | `string` | Syntax highlighting language |
+| `filename` | `string` | Filename shown in the header |
+| `onAccept` | `() => void` | Called when user accepts the diff |
+| `onReject` | `() => void` | Called when user rejects the diff |
+
+### Example
+
+```tsx title="components/code-review.tsx"
+import { CodeDiff } from "@fabrik/ui/react"
+
+export function CodeReview() {
+  return (
+    <CodeDiff
+      original="const x = 1;"
+      modified="const x = 42;"
+      language="typescript"
+      filename="config.ts"
+      onAccept={() => console.log("accepted")}
+      onReject={() => console.log("rejected")}
+    />
+  )
+}
+```
+
+## ArtifactPart type
+
+```ts
+import type { ArtifactPart } from "@fabrik/ui"
+
+interface ArtifactPart {
+  type: "artifact"
+  id: string
+  title: string
+  language: string  // "html", "typescript", "python", etc.
+  content: string
+  status: "streaming" | "done"
+}
+```
+
+The `status` field lets you show loading indicators while content is being generated.

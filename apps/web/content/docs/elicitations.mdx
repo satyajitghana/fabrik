@@ -1,0 +1,139 @@
+---
+title: Elicitations
+description: Five elicitation types that let the AI ask follow-up questions
+---
+
+Elicitations let the LLM ask the user structured questions mid-conversation. Instead of asking "which city?" as plain text, the AI renders an interactive UI element the user can respond to.
+
+Elicitation is enabled by default. Disable it with `ask={false}` on the `<Fabrik>` provider.
+
+## Elicitation types
+
+### 1. Confirm
+
+A yes/no dialog for binary decisions.
+
+```json
+{
+  "type": "confirm",
+  "title": "Delete this file?",
+  "message": "This action cannot be undone.",
+  "confirmLabel": "Delete",
+  "cancelLabel": "Keep"
+}
+```
+
+Renders a dialog with two buttons. The response is `true` or `false`.
+
+### 2. Choice
+
+A single-select picker from a list of options.
+
+```json
+{
+  "type": "choice",
+  "title": "Select a language",
+  "options": [
+    { "value": "ts", "label": "TypeScript", "description": "Recommended" },
+    { "value": "js", "label": "JavaScript" },
+    { "value": "py", "label": "Python" }
+  ]
+}
+```
+
+The response is the `value` string of the selected option.
+
+### 3. Multi-choice
+
+A multi-select picker with optional min/max constraints.
+
+```json
+{
+  "type": "multi_choice",
+  "title": "Select toppings",
+  "options": [
+    { "value": "cheese", "label": "Cheese" },
+    { "value": "pepperoni", "label": "Pepperoni" },
+    { "value": "mushrooms", "label": "Mushrooms" }
+  ],
+  "min": 1,
+  "max": 3
+}
+```
+
+The response is an array of selected `value` strings.
+
+### 4. Text input
+
+A free-form text field for open-ended input.
+
+```json
+{
+  "type": "text",
+  "title": "Enter your API key",
+  "message": "We need this to connect to your account.",
+  "placeholder": "sk-..."
+}
+```
+
+The response is the entered string.
+
+### 5. Permission
+
+A permission request for accessing a resource.
+
+```json
+{
+  "type": "permission",
+  "title": "Access your calendar",
+  "message": "This lets me check your availability.",
+  "resource": "google-calendar"
+}
+```
+
+The response is `true` (granted) or `false` (denied).
+
+## How it works
+
+1. The LLM calls the built-in `__ask` tool with the elicitation config.
+2. Fabrik emits an `ask` stream event and pauses the stream.
+3. The `<Chat>` component renders the appropriate UI (dialog, picker, etc.).
+4. The user responds.
+5. `respond(askId, value)` sends the answer back and the stream resumes.
+
+## Responding programmatically
+
+If you build custom UI, use the `respond` function from `useChat`:
+
+```tsx title="components/custom-elicitation.tsx"
+"use client"
+import { useChat } from "@fabrik/ui/react"
+
+export function CustomElicitation({ askId }: { askId: string }) {
+  const { respond } = useChat()
+
+  return (
+    <button onClick={() => respond(askId, true)}>
+      Confirm
+    </button>
+  )
+}
+```
+
+## TypeScript types
+
+All elicitation configs are type-safe:
+
+```ts
+import type {
+  AskConfig,
+  ConfirmAsk,
+  ChoiceAsk,
+  MultiChoiceAsk,
+  TextAsk,
+  PermissionAsk,
+  AskOption,
+} from "@fabrik/ui"
+```
+
+`AskConfig` is a discriminated union — switch on `config.type` to narrow the type.

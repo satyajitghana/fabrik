@@ -151,6 +151,7 @@ const provider = custom({
     // ... yield StreamEvents
   }
 })
+```
 
 ## Project Structure
 

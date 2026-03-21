@@ -1,0 +1,12 @@
+/* Fabrik teal brand overrides for fumadocs */
+:root {
+  --color-fd-primary: oklch(0.44 0.12 186);
+  --color-fd-ring: oklch(0.55 0.10 186);
+  --color-fd-primary-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  --color-fd-primary: oklch(0.70 0.13 186);
+  --color-fd-ring: oklch(0.55 0.10 186);
+  --color-fd-primary-foreground: oklch(0.15 0.02 186);
+}

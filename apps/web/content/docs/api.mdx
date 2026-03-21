@@ -1,0 +1,245 @@
+---
+title: API Reference
+description: Complete API reference for all Fabrik UI exports
+---
+
+## Core (`@fabrik/ui`)
+
+### defineComponent
+
+Defines a React component the LLM can render.
+
+```ts
+import { defineComponent } from "@fabrik/ui"
+import { z } from "zod"
+
+const card = defineComponent({
+  name: "info_card",
+  description: "Displays information in a card",
+  schema: z.object({ title: z.string(), body: z.string() }),
+  component: ({ title, body }) => <div>{title}: {body}</div>,
+})
+```
+
+**Parameters:** `ComponentDef<T>`
+
+| Field | Type | Required |
+|---|---|---|
+| `name` | `string` | Yes |
+| `description` | `string` | Yes |
+| `schema` | `ZodType<T>` | Yes |
+| `component` | `ComponentType<T>` | Yes |
+| `loading` | `ComponentType<Partial<T>>` | No |
+| `stepTitle` | `string \| (args: T) => string` | No |
+
+### defineTool
+
+Defines a server-side tool the LLM can call.
+
+```ts
+import { defineTool } from "@fabrik/ui"
+import { z } from "zod"
+
+const fetchWeather = defineTool({
+  name: "fetch_weather",
+  description: "Fetches weather data for a city",
+  schema: z.object({ city: z.string() }),
+  run: async ({ city }) => {
+    const res = await fetch(`https://api.weather.com/${city}`)
+    return res.json()
+  },
+})
+```
+
+**Parameters:** `ToolDef<In, Out>`
+
+| Field | Type | Required |
+|---|---|---|
+| `name` | `string` | Yes |
+| `description` | `string` | Yes |
+| `schema` | `ZodType<In>` | Yes |
+| `run` | `(input: In) => Out \| Promise<Out>` | Yes |
+| `stepTitle` | `string \| (args: In) => string` | No |
+| `render` | `(input, context) => ReactNode` | No |
+
+### createLibrary
+
+Groups component definitions with uniqueness validation.
+
+```ts
+import { createLibrary } from "@fabrik/ui"
+
+const components = createLibrary([weatherCard, stockChart])
+```
+
+### FabrikClient
+
+The core engine. Used internally by `<Fabrik>` — you only need this for headless usage.
+
+```ts
+import { FabrikClient } from "@fabrik/ui"
+
+const client = new FabrikClient({
+  provider,
+  components: [weatherCard],
+  tools: [fetchWeather],
+  systemPrompt: "You are a helpful assistant.",
+  storage: "memory",
+  ask: true,
+  maxSteps: 10,
+})
+```
+
+## React (`@fabrik/ui/react`)
+
+### Fabrik
+
+Root provider component. Wraps your app and initializes the client.
+
+```tsx
+<Fabrik
+  provider={provider}
+  components={[weatherCard]}
+  tools={[fetchWeather]}
+  systemPrompt="You are a helpful assistant."
+  storage="memory"
+  ask={true}
+  maxSteps={10}
+>
+  {children}
+</Fabrik>
+```
+
+### Chat
+
+Full-featured chat surface.
+
+```tsx
+<Chat sidebar placeholder="Ask anything..." />
+```
+
+### Fab
+
+Floating action button that expands into a chat panel.
+
+```tsx
+<Fab position="bottom-right" />
+```
+
+### useChat
+
+Hook for building custom chat UI. Returns messages, input controls, and actions.
+
+See the [Components](/docs/components) page for the full return type.
+
+### Message
+
+Renders a single `FabrikMessage` with all its parts.
+
+```tsx
+import { Message } from "@fabrik/ui/react"
+
+<Message message={msg} />
+```
+
+### FabrikPages / defineRoute
+
+Multi-page AI routing. Each route has its own system prompt and components.
+
+```tsx
+import { FabrikPages, defineRoute } from "@fabrik/ui/react"
+```
+
+## Server (`@fabrik/ui/server`)
+
+### handler
+
+Creates a Next.js API route handler.
+
+```ts title="app/api/chat/route.ts"
+import { handler } from "@fabrik/ui/server"
+import { openai } from "@fabrik/ui/openai"
+
+export const POST = handler({
+  provider: openai({ model: "gpt-4o" }),
+})
+```
+
+### server
+
+Client-side adapter that connects to the handler route.
+
+```ts
+import { server } from "@fabrik/ui/server"
+
+const provider = server({ url: "/api/chat" })
+```
+
+## Types
+
+All types are exported from `@fabrik/ui`:
+
+```ts
+import type {
+  FabrikMessage,
+  FabrikThread,
+  Part,
+  TextPart,
+  ComponentPart,
+  ThinkingPart,
+  StepPart,
+  ImagePart,
+  AskPart,
+  ArtifactPart,
+  StreamEvent,
+  ComponentDef,
+  ToolDef,
+  Provider,
+  StreamOptions,
+  ToolSpec,
+  Storage,
+  ClientState,
+  AskConfig,
+  ConfirmAsk,
+  ChoiceAsk,
+  MultiChoiceAsk,
+  TextAsk,
+  PermissionAsk,
+} from "@fabrik/ui"
+```
+
+### FabrikMessage
+
+```ts
+interface FabrikMessage {
+  id: string
+  role: "user" | "assistant" | "system"
+  parts: Part[]
+  createdAt: string
+}
+```
+
+### Part (discriminated union)
+
+```ts
+type Part =
+  | TextPart
+  | ComponentPart
+  | ThinkingPart
+  | StepPart
+  | ImagePart
+  | AskPart
+  | ArtifactPart
+```
+
+### ThreadStatus
+
+```ts
+type ThreadStatus = "idle" | "streaming" | "waiting" | "error"
+```
+
+### PartStatus
+
+```ts
+type PartStatus = "pending" | "streaming" | "done" | "error"
+```

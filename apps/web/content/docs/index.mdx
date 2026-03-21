@@ -1,0 +1,52 @@
+---
+title: Introduction
+description: Generative UI SDK for any LLM
+---
+
+# Fabrik UI
+
+Generative UI SDK for any LLM. The AI decides what to show — not just say.
+
+Fabrik lets you define React components that the AI can render. When you ask "show me the weather", the LLM calls `show_weather_card()` and your component renders with real data.
+
+## Key Features
+
+- **Generative UI** — LLM decides which components to render
+- **Any LLM** — OpenAI, Anthropic, Google, 53+ via AI SDK
+- **Streaming** — Text and components stream progressively
+- **Elicitation** — AI asks follow-up questions inline
+- **Artifacts** — HTML iframes, code with syntax highlighting
+- **Code Diffs** — GitHub-style diffs with accept/reject
+- **Secure** — API keys never leave the server
+
+## Quick Example
+
+Create two files to get a working generative UI chat:
+
+### Server route
+
+```ts title="app/api/chat/route.ts"
+import { openai } from "@fabrik/ui/openai"
+import { handler } from "@fabrik/ui/server"
+
+export const POST = handler({
+  provider: openai({ model: "gpt-4o" })
+})
+```
+
+### Client page
+
+```tsx title="app/page.tsx"
+import { Fabrik, Chat } from "@fabrik/ui/react"
+import { server } from "@fabrik/ui/server"
+
+const provider = server({ url: "/api/chat" })
+
+export default function Page() {
+  return (
+    <Fabrik provider={provider}>
+      <Chat />
+    </Fabrik>
+  )
+}
+```

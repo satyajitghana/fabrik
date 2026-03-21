@@ -1,0 +1,129 @@
+---
+title: Streaming
+description: SSE protocol and StreamEvent types
+---
+
+Fabrik uses Server-Sent Events (SSE) over HTTP POST for real-time streaming. The server emits `StreamEvent` objects as newline-delimited JSON.
+
+## Wire format
+
+```
+POST /api/chat
+Content-Type: application/json
+
+{ "messages": [...], "systemPrompt": "...", "tools": [...] }
+```
+
+The response is `text/event-stream`:
+
+```
+data: {"type":"start","runId":"run-abc123"}
+data: {"type":"text","delta":"Hello "}
+data: {"type":"text","delta":"world!"}
+data: {"type":"done"}
+```
+
+## StreamEvent types
+
+### Lifecycle
+
+| Event | Fields | Description |
+|---|---|---|
+| `start` | `runId` | Stream has started |
+| `done` | — | Stream completed successfully |
+| `error` | `message` | Stream failed with an error |
+
+### Text
+
+| Event | Fields | Description |
+|---|---|---|
+| `text` | `delta` | Incremental text chunk |
+
+### Components (generative UI)
+
+| Event | Fields | Description |
+|---|---|---|
+| `component_start` | `id`, `name` | LLM is generating component props |
+| `component_delta` | `id`, `delta` | Partial JSON of component props |
+| `component_done` | `id`, `props` | Final validated props |
+
+### Thinking
+
+| Event | Fields | Description |
+|---|---|---|
+| `thinking_start` | `id` | LLM started chain-of-thought |
+| `thinking_delta` | `id`, `delta` | Thinking text chunk |
+| `thinking_done` | `id`, `durationMs` | Thinking complete |
+
+### Steps
+
+| Event | Fields | Description |
+|---|---|---|
+| `step_start` | `id`, `title` | Tool call started |
+| `step_done` | `id`, `stepStatus`, `durationMs` | Tool call finished |
+
+### Artifacts
+
+| Event | Fields | Description |
+|---|---|---|
+| `artifact_start` | `id`, `title`, `language` | Artifact generation started |
+| `artifact_delta` | `id`, `delta` | Artifact content chunk |
+| `artifact_done` | `id` | Artifact complete |
+
+### Elicitation
+
+| Event | Fields | Description |
+|---|---|---|
+| `ask` | `id`, `config` | LLM is asking the user a question |
+
+### Internal (tool calls)
+
+These events are used internally by the client and are not exposed to developers:
+
+| Event | Fields | Description |
+|---|---|---|
+| `tool_call_start` | `id`, `toolName` | Raw tool call started |
+| `tool_call_delta` | `id`, `delta` | Tool call argument chunk |
+| `tool_call_done` | `id`, `toolName`, `args` | Tool call complete |
+
+## TypeScript type
+
+The full `StreamEvent` union type:
+
+```ts
+import type { StreamEvent } from "@fabrik/ui"
+```
+
+This is a discriminated union — switch on `event.type` to narrow the type and get full type safety for each event's fields.
+
+## Custom streaming
+
+If you build a custom provider, yield `StreamEvent` objects from an async generator:
+
+```ts title="lib/custom-stream.ts"
+import type { Provider, StreamEvent, StreamOptions } from "@fabrik/ui"
+
+export function customProvider(): Provider {
+  return {
+    name: "custom",
+    async *stream(options: StreamOptions): AsyncIterable<StreamEvent> {
+      yield { type: "start", runId: "run-1" }
+
+      // Stream text
+      for (const word of ["Hello", " ", "world!"]) {
+        yield { type: "text", delta: word }
+      }
+
+      // Render a component
+      yield { type: "component_start", id: "c1", name: "greeting_card" }
+      yield {
+        type: "component_done",
+        id: "c1",
+        props: { message: "Hello!" },
+      }
+
+      yield { type: "done" }
+    },
+  }
+}
+```

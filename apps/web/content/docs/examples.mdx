@@ -1,0 +1,93 @@
+---
+title: Examples
+description: All example apps included in the Fabrik UI repository
+---
+
+The Fabrik repository includes seven example apps demonstrating different patterns. Each is a complete Next.js project you can run locally.
+
+## next-chat
+
+Full-featured chat with generative UI components.
+
+```bash
+cd examples/next-chat && pnpm dev
+```
+
+Demonstrates: `<Chat>`, `defineComponent`, weather cards, bar charts, data tables, elicitation dialogs, artifact panels.
+
+## next-widget
+
+Floating chat widget using the `<Fab>` component.
+
+```bash
+cd examples/next-widget && pnpm dev
+```
+
+Demonstrates: `<Fab>`, floating action button, expandable chat panel overlaying existing page content.
+
+## next-copilot
+
+Side-panel copilot layout with a main content area.
+
+```bash
+cd examples/next-copilot && pnpm dev
+```
+
+Demonstrates: `<Fab>` in a copilot layout, side panel, context-aware responses alongside your main application.
+
+## custom-agent
+
+Custom agent with specialized system prompts and tools.
+
+```bash
+cd examples/custom-agent && pnpm dev
+```
+
+Demonstrates: custom `systemPrompt`, `defineTool`, multi-step tool chains, agent-style behavior.
+
+## local-model
+
+Running with a local LLM via Ollama or any OpenAI-compatible endpoint.
+
+```bash
+cd examples/local-model && pnpm dev
+```
+
+Demonstrates: `openai()` with a custom `baseUrl` pointing to a local server, no API key required.
+
+## pages-demo
+
+Multi-page AI routing with `FabrikPages`.
+
+```bash
+cd examples/pages-demo && pnpm dev
+```
+
+Demonstrates: `defineRoute`, page-specific components, route-based system prompts, multi-page AI navigation.
+
+## Running examples
+
+All examples are part of the monorepo. From the root:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run a specific example
+pnpm --filter next-chat dev
+
+# Or run all examples
+pnpm dev
+```
+
+Each example uses the local `@fabrik/ui` workspace package, so changes to the SDK are reflected immediately.
+
+## Creating a new project
+
+Use the CLI to scaffold a new project:
+
+```bash
+npx create-fabrik-app my-app
+```
+
+This creates a Next.js project with Fabrik UI pre-configured, including a server route, client page, and example component.

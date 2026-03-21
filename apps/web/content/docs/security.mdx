@@ -1,0 +1,109 @@
+---
+title: Security
+description: Security model and best practices for Fabrik UI
+---
+
+import { Callout } from 'fumadocs-ui/components/callout'
+import { Step, Steps } from 'fumadocs-ui/components/steps'
+
+<Callout type="warn" title="Never put API keys in frontend code">
+  This is the #1 security mistake with LLM apps. Fabrik enforces a server/client split — API keys stay on the server.
+</Callout>
+
+## How it works
+
+<Steps>
+  <Step>
+    ### Client sends a message
+    The browser sends user text to your Next.js API route via `POST /api/chat`. No API key is included.
+  </Step>
+  <Step>
+    ### Server calls the LLM
+    Your API route uses `handler()` which reads the API key from environment variables and streams the response from OpenAI/Anthropic/Google.
+  </Step>
+  <Step>
+    ### Server streams back events
+    The response is an SSE stream of `StreamEvent` objects — text deltas, component props, elicitation configs. No raw LLM internals are exposed.
+  </Step>
+  <Step>
+    ### Client renders the UI
+    The `server()` adapter on the client reads the SSE stream and renders messages, components, and artifacts.
+  </Step>
+</Steps>
+
+## What the client sees
+
+The SSE stream contains only:
+
+- **Text deltas** — incremental text chunks
+- **Component props** — validated by your Zod schema
+- **Elicitation configs** — structured question definitions
+- **Artifact content** — code blocks and HTML
+- **Lifecycle events** — start, done, error
+
+The client **never** sees raw tool call arguments, system prompts, or internal reasoning.
+
+## Schema validation
+
+All component props are validated server-side with Zod:
+
+```ts title="How validation works"
+// 1. LLM outputs JSON: { "city": "SF", "temp": 72 }
+// 2. Fabrik validates against your schema
+const schema = z.object({ city: z.string(), temp: z.number() })
+// 3. Only validated props are sent to the client
+// 4. If validation fails → error event, not a render
+```
+
+## Environment variables
+
+Store API keys in `.env.local` (never committed to git):
+
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=AI...
+```
+
+The provider adapters read these automatically:
+
+| Provider | Environment variable |
+|---|---|
+| `@fabrik/ui/openai` | `OPENAI_API_KEY` |
+| `@fabrik/ui/anthropic` | `ANTHROPIC_API_KEY` |
+| `@fabrik/ui/google` | `GOOGLE_AI_API_KEY` |
+
+## Artifact sandboxing
+
+HTML artifacts render inside iframes with `sandbox=""` — the most restrictive mode:
+
+- No JavaScript execution
+- No form submissions
+- No navigation away from the page
+- No access to parent window
+- `referrerPolicy="no-referrer"` prevents data leaking via headers
+
+Code artifacts are sanitized with defense-in-depth HTML stripping before rendering.
+
+## Best practices
+
+<Callout type="info" title="Security checklist">
+  1. Use `handler()` + `server()` pattern — never pass API keys to the client
+  2. Define strict Zod schemas — limits what the LLM can render
+  3. Add `.env.local` to `.gitignore`
+  4. Set `maxSteps` to prevent runaway tool call chains
+  5. Use `beforeSend` to filter user input
+</Callout>
+
+```tsx title="app/page.tsx"
+<Fabrik
+  provider={provider}
+  maxSteps={5}
+  beforeSend={(text) => {
+    if (text.length > 2000) return null // reject oversized input
+    return text
+  }}
+>
+  <Chat />
+</Fabrik>
+```
