@@ -349,6 +349,34 @@ function processStreamEvent(
       )
     }
 
+    // Fabrik Lang DSL
+    case "ui_start": {
+      return updateLastAssistantMessage(state, threadId, (parts) => [
+        ...parts,
+        { type: "ui" as const, id: event.id, dslText: "", status: "streaming" as const },
+      ])
+    }
+
+    case "ui_delta": {
+      return updateLastAssistantMessage(state, threadId, (parts) =>
+        parts.map((p) =>
+          p.type === "ui" && p.id === event.id
+            ? { ...p, dslText: (p as { dslText: string }).dslText + event.delta }
+            : p
+        )
+      )
+    }
+
+    case "ui_done": {
+      return updateLastAssistantMessage(state, threadId, (parts) =>
+        parts.map((p) =>
+          p.type === "ui" && p.id === event.id
+            ? { ...p, status: "done" as const }
+            : p
+        )
+      )
+    }
+
     case "ask": {
       const s = updateLastAssistantMessage(state, threadId, (parts) => [
         ...parts,

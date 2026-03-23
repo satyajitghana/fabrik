@@ -6,7 +6,7 @@ description: Get a working generative UI chat in under 5 minutes
 ## 1. Install
 
 ```bash
-pnpm add @fabrik-sdk/ui zod motion
+pnpm add @fabrik-sdk/ui ai @ai-sdk/google zod motion
 ```
 
 ## 2. Create the server route
@@ -14,12 +14,13 @@ pnpm add @fabrik-sdk/ui zod motion
 This file handles LLM communication. API keys are read from environment variables.
 
 ```ts title="app/api/chat/route.ts"
-import { openai } from "@fabrik-sdk/ui/openai"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
 import { handler } from "@fabrik-sdk/ui/server"
+import { google } from "@ai-sdk/google"
 
 export const POST = handler({
-  provider: openai({ model: "gpt-4o" })
-  // Reads OPENAI_API_KEY from .env.local
+  provider: aiSdk({ model: google("gemini-3-flash-preview") })
+  // Reads GOOGLE_GENERATIVE_AI_API_KEY from .env.local
 })
 ```
 
@@ -63,7 +64,7 @@ export default function Page() {
 ## 4. Add your API key
 
 ```bash title=".env.local"
-OPENAI_API_KEY=sk-...
+GOOGLE_GENERATIVE_AI_API_KEY=AI...
 ```
 
 ## 5. Run
@@ -76,18 +77,39 @@ Open `http://localhost:3000` and ask "Show me the weather in San Francisco".
 
 ## Switching providers
 
-Change one import in your server route:
+Swap the AI SDK model in your server route — the client code never changes:
+
+```ts title="OpenAI"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { openai } from "@ai-sdk/openai"
+
+export const POST = handler({
+  provider: aiSdk({ model: openai("gpt-4o") })
+})
+// pnpm add @ai-sdk/openai — env: OPENAI_API_KEY
+```
 
 ```ts title="Anthropic"
-import { anthropic } from "@fabrik-sdk/ui/anthropic"
-export const POST = handler({ provider: anthropic({ model: "claude-sonnet-4-20250514" }) })
-// env: ANTHROPIC_API_KEY
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { anthropic } from "@ai-sdk/anthropic"
+
+export const POST = handler({
+  provider: aiSdk({ model: anthropic("claude-sonnet-4-20250514") })
+})
+// pnpm add @ai-sdk/anthropic — env: ANTHROPIC_API_KEY
 ```
 
 ```ts title="Google Gemini"
-import { google } from "@fabrik-sdk/ui/google"
-export const POST = handler({ provider: google({ model: "gemini-2.0-flash" }) })
-// env: GOOGLE_AI_API_KEY
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { google } from "@ai-sdk/google"
+
+export const POST = handler({
+  provider: aiSdk({ model: google("gemini-3-flash-preview") })
+})
+// pnpm add @ai-sdk/google — env: GOOGLE_GENERATIVE_AI_API_KEY
 ```
 
 The client code never changes.

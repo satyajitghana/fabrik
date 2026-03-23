@@ -18,7 +18,7 @@
 ## Quickstart
 
 ```bash
-pnpm add @fabrik-sdk/ui zod motion
+pnpm add @fabrik-sdk/ui ai @ai-sdk/google zod motion
 ```
 
 Create two files:
@@ -26,11 +26,12 @@ Create two files:
 **`app/api/chat/route.ts`** — Server-side route (API key stays here):
 
 ```typescript
-import { openai } from "@fabrik-sdk/ui/openai"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { google } from "@ai-sdk/google"
 import { handler } from "@fabrik-sdk/ui/server"
 
-export const POST = handler({ provider: openai({ model: "gpt-4o" }) })
-// Reads OPENAI_API_KEY from your .env.local automatically
+export const POST = handler({ provider: aiSdk({ model: google("gemini-3-flash-preview") }) })
+// Reads GOOGLE_GENERATIVE_AI_API_KEY from your .env.local automatically
 ```
 
 **`app/page.tsx`** — Client-side app:
@@ -69,7 +70,7 @@ export default function Page() {
 **`.env.local`** — API key (never committed to git):
 
 ```bash
-OPENAI_API_KEY=sk-...
+GOOGLE_GENERATIVE_AI_API_KEY=...
 ```
 
 **That's it.** The AI calls `show_weather_card()` and your component renders. API keys never touch the browser.
@@ -95,27 +96,30 @@ OPENAI_API_KEY=sk-...
 
 ## Providers
 
-Swap the import and model to switch LLMs. API keys are read from environment variables automatically.
+Fabrik uses [AI SDK](https://sdk.vercel.ai/) as the primary provider interface, giving you access to **53+ providers** through a single adapter. Swap the model import to switch LLMs — API keys are read from environment variables automatically.
 
 ```typescript
-// app/api/chat/route.ts — swap one import to change providers
-import { openai } from "@fabrik-sdk/ui/openai"        // reads OPENAI_API_KEY
+// app/api/chat/route.ts — AI SDK adapter (recommended)
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { google } from "@ai-sdk/google"                // reads GOOGLE_GENERATIVE_AI_API_KEY
 import { handler } from "@fabrik-sdk/ui/server"
-export const POST = handler({ provider: openai({ model: "gpt-4o" }) })
+export const POST = handler({ provider: aiSdk({ model: google("gemini-3-flash-preview") }) })
 ```
 
 ```typescript
-// Or Anthropic:
-import { anthropic } from "@fabrik-sdk/ui/anthropic"   // reads ANTHROPIC_API_KEY
+// Or OpenAI via AI SDK:
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { openai } from "@ai-sdk/openai"                // reads OPENAI_API_KEY
 import { handler } from "@fabrik-sdk/ui/server"
-export const POST = handler({ provider: anthropic({ model: "claude-sonnet-4-20250514" }) })
+export const POST = handler({ provider: aiSdk({ model: openai("gpt-4o") }) })
 ```
 
 ```typescript
-// Or Google:
-import { google } from "@fabrik-sdk/ui/google"         // reads GOOGLE_AI_API_KEY
+// Or Anthropic via AI SDK:
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { anthropic } from "@ai-sdk/anthropic"           // reads ANTHROPIC_API_KEY
 import { handler } from "@fabrik-sdk/ui/server"
-export const POST = handler({ provider: google({ model: "gemini-2.0-flash" }) })
+export const POST = handler({ provider: aiSdk({ model: anthropic("claude-sonnet-4-20250514") }) })
 ```
 
 The client-side code stays the same regardless of which LLM you use:
@@ -126,13 +130,15 @@ import { server } from "@fabrik-sdk/ui/server"
 const provider = server({ url: "/api/chat" })
 ```
 
-### Supported providers
+### Supported providers (via AI SDK)
 
-| Import | Env variable | Default model |
-|--------|-------------|---------------|
-| `@fabrik-sdk/ui/openai` | `OPENAI_API_KEY` | `gpt-4o` |
-| `@fabrik-sdk/ui/anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-4-20250514` |
-| `@fabrik-sdk/ui/google` | `GOOGLE_AI_API_KEY` | `gemini-2.0-flash` |
+| AI SDK Package | Env variable | Example model |
+|----------------|-------------|---------------|
+| `@ai-sdk/openai` | `OPENAI_API_KEY` | `gpt-4o` |
+| `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-4-20250514` |
+| `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-flash-preview` |
+
+Plus 53+ additional providers — Mistral, Groq, Cohere, Perplexity, and more — via [`ai`](https://sdk.vercel.ai/providers).
 
 ### Advanced: custom provider
 
@@ -235,13 +241,15 @@ npx playwright test examples/next-chat/    # One example
 
 ## Architecture
 
+The AI SDK adapter (`aiSdk()`) is the recommended way to connect to any LLM. It wraps AI SDK models into Fabrik's streaming protocol, so any provider supported by AI SDK works out of the box.
+
 ```
 packages/
 ├── fabrik-ui/          # SDK — "@fabrik-sdk/ui"
 │   ├── src/core/       # Client, stream, reducer, registry, types
 │   ├── src/react/      # <Fabrik>, useChat(), <Message>, <Chat>, <Fab>
 │   ├── src/chat/       # Elicitations, artifacts, code diffs, input
-│   ├── src/adapters/   # OpenAI, Anthropic, Google, AI SDK, custom
+│   ├── src/adapters/   # AI SDK (primary), OpenAI, Anthropic, Google, custom
 │   ├── src/server/     # handler(), server() adapter
 │   └── src/themes/     # CSS variable presets
 ├── ui/                 # 55 shadcn components

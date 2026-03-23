@@ -10,10 +10,19 @@ import type {
   ImagePart,
   AskPart,
   ArtifactPart,
+  UiPart,
   Part,
 } from "../core/types"
 import { useRegistry } from "./use-registry"
 import { ComponentSlot } from "./component-slot"
+import { useFabrikActions } from "./provider"
+import { PermissionDialog } from "../chat/permission-dialog"
+import { ConfirmDialog } from "../chat/confirm-dialog"
+import { ChoicePicker } from "../chat/choice-picker"
+import { TextInputDialog } from "../chat/text-input-dialog"
+import { FabrikLangRenderer } from "../lang/renderer"
+import { createLangLibrary } from "../lang/library"
+import { allLangComponents } from "../lang/components"
 
 // ---------------------------------------------------------------------------
 // <Message> — renders any message with all part types
@@ -101,6 +110,8 @@ function PartRenderer({
       return renderAsk?.(part) ?? <DefaultAsk part={part} />
     case "artifact":
       return renderArtifact?.(part) ?? <DefaultArtifact part={part} />
+    case "ui":
+      return <DefaultUi part={part} />
     default:
       return null
   }
@@ -288,18 +299,25 @@ function DefaultThinking({ part }: { part: ThinkingPart }) {
 }
 
 function DefaultStep({ part }: { part: StepPart }) {
-  const icon =
-    part.stepStatus === "running"
-      ? "◌"
-      : part.stepStatus === "done"
-        ? "✓"
-        : "✗"
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <span>{icon}</span>
+    <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+      {part.stepStatus === "running" ? (
+        <svg className="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
+          <path d="M14 8a6 6 0 00-6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      ) : part.stepStatus === "done" ? (
+        <svg className="w-3.5 h-3.5 text-success shrink-0" viewBox="0 0 16 16" fill="currentColor">
+          <path fillRule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm3.78-9.72a.75.75 0 00-1.06-1.06L7 8.94 5.28 7.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.06 0l4.25-4.25z" />
+        </svg>
+      ) : (
+        <svg className="w-3.5 h-3.5 text-destructive shrink-0" viewBox="0 0 16 16" fill="currentColor">
+          <path fillRule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zM5.28 5.28a.75.75 0 011.06 0L8 6.94l1.66-1.66a.75.75 0 111.06 1.06L9.06 8l1.66 1.66a.75.75 0 11-1.06 1.06L8 9.06l-1.66 1.66a.75.75 0 01-1.06-1.06L6.94 8 5.28 6.34a.75.75 0 010-1.06z" />
+        </svg>
+      )}
       <span>{part.title}</span>
       {part.durationMs != null && part.stepStatus !== "running" && (
-        <span className="text-xs opacity-60">
+        <span className="text-[11px] tabular-nums opacity-50">
           {(part.durationMs / 1000).toFixed(1)}s
         </span>
       )}
@@ -319,31 +337,160 @@ function DefaultImage({ part }: { part: ImagePart }) {
 }
 
 function DefaultAsk({ part }: { part: AskPart }) {
+  const actions = useFabrikActions()
+  const respond = (value: unknown) => actions.respond(part.id, value)
+
   if (part.status !== "pending") {
-    return (
-      <div className="text-sm text-muted-foreground">
-        Answered: {JSON.stringify(part.response)}
-      </div>
-    )
+    return <ResolvedAsk part={part} />
   }
-  return (
-    <div className="rounded-lg border p-4 text-sm">
-      <p className="font-medium">{part.config.title}</p>
-      {"message" in part.config && part.config.message && (
-        <p className="mt-1 text-muted-foreground">{part.config.message}</p>
-      )}
-      {"options" in part.config && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {part.config.options.map((opt) => (
-            <button
-              key={opt.value}
-              className="rounded-full border px-3 py-1 text-sm hover:bg-accent"
-            >
-              {opt.label}
-            </button>
-          ))}
+
+  switch (part.config.type) {
+    case "permission":
+      return (
+        <PermissionDialog
+          title={part.config.title}
+          message={part.config.message}
+          resource={part.config.resource}
+          onRespond={(granted) => respond(granted ? "allow" : "deny")}
+        />
+      )
+    case "confirm":
+      return <ConfirmDialog config={part.config} onRespond={respond} />
+    case "choice":
+    case "multi_choice":
+      return <ChoicePicker config={part.config} onRespond={respond} />
+    case "text":
+      return (
+        <TextInputDialog
+          title={part.config.title}
+          message={part.config.message}
+          placeholder={part.config.placeholder}
+          onRespond={(text) => respond(text)}
+        />
+      )
+    default:
+      return null
+  }
+}
+
+/** Shows the original elicitation UI in a resolved (disabled) state with the user's response */
+function ResolvedAsk({ part }: { part: AskPart }) {
+  const isPositive = part.response === true || part.response === "allow"
+  const isNegative = part.response === false || part.response === "deny"
+
+  const responseLabel =
+    part.response === true ? "Confirmed"
+    : part.response === false ? "Declined"
+    : part.response === "allow" ? "Allowed"
+    : part.response === "deny" ? "Denied"
+    : String(part.response ?? "")
+
+  const statusIcon = isPositive ? (
+    <svg className="w-3.5 h-3.5 text-success shrink-0" viewBox="0 0 16 16" fill="currentColor">
+      <path fillRule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm3.78-9.72a.75.75 0 00-1.06-1.06L7 8.94 5.28 7.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.06 0l4.25-4.25z" />
+    </svg>
+  ) : isNegative ? (
+    <svg className="w-3.5 h-3.5 text-destructive shrink-0" viewBox="0 0 16 16" fill="currentColor">
+      <path fillRule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zM5.28 5.28a.75.75 0 011.06 0L8 6.94l1.66-1.66a.75.75 0 111.06 1.06L9.06 8l1.66 1.66a.75.75 0 11-1.06 1.06L8 9.06l-1.66 1.66a.75.75 0 01-1.06-1.06L6.94 8 5.28 6.34a.75.75 0 010-1.06z" />
+    </svg>
+  ) : null
+
+  switch (part.config.type) {
+    case "permission":
+      return (
+        <div className="rounded-xl border border-border bg-card/50 p-4 my-2 opacity-75">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold">{part.config.title}</p>
+              <p className="text-[12px] mt-0.5 text-muted-foreground">{part.config.message}</p>
+              <span className="text-[11px] mt-1.5 font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground inline-block">{part.config.resource}</span>
+              <div className="flex items-center gap-1.5 mt-3 text-[12px]">
+                {statusIcon}
+                <span className={isPositive ? "text-success font-medium" : isNegative ? "text-destructive font-medium" : "text-muted-foreground"}>
+                  {responseLabel}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      )
+
+    case "confirm":
+      return (
+        <div className="rounded-xl border border-border bg-card/50 p-4 my-2 opacity-75">
+          <p className="text-[13px] font-semibold">{part.config.title}</p>
+          <p className="text-[12px] mt-1 text-muted-foreground">{part.config.message}</p>
+          <div className="flex items-center gap-1.5 mt-3 text-[12px]">
+            {statusIcon}
+            <span className={isPositive ? "text-success font-medium" : "text-destructive font-medium"}>
+              {responseLabel}
+            </span>
+          </div>
+        </div>
+      )
+
+    case "choice":
+      return (
+        <div className="rounded-xl border border-border bg-card/50 p-4 my-2 opacity-75">
+          <p className="text-[13px] font-semibold">{part.config.title}</p>
+          {"message" in part.config && part.config.message && (
+            <p className="text-[12px] mt-1 text-muted-foreground">{part.config.message}</p>
+          )}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {part.config.options.map((opt) => (
+              <span
+                key={opt.value}
+                className={`rounded-full border px-3 py-1.5 text-[12px] ${
+                  opt.value === part.response
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border text-muted-foreground/50"
+                }`}
+              >
+                {opt.value === part.response && statusIcon}
+                {opt.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+
+    case "text":
+      return (
+        <div className="rounded-xl border border-border bg-card/50 p-4 my-2 opacity-75">
+          <p className="text-[13px] font-semibold">{part.config.title}</p>
+          <div className="flex items-center gap-1.5 mt-2 text-[13px]">
+            {statusIcon}
+            <span className="text-foreground">{String(part.response ?? "")}</span>
+          </div>
+        </div>
+      )
+
+    default:
+      return (
+        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground py-1">
+          {statusIcon}
+          <span>{responseLabel}</span>
+        </div>
+      )
+  }
+}
+
+// Default Fabrik Lang library (created once, shared across all UiPart renders)
+const defaultLangLibrary = createLangLibrary(allLangComponents)
+
+function DefaultUi({ part }: { part: UiPart }) {
+  return (
+    <div className="my-2">
+      <FabrikLangRenderer
+        text={part.dslText}
+        library={defaultLangLibrary}
+        isStreaming={part.status === "streaming"}
+      />
     </div>
   )
 }

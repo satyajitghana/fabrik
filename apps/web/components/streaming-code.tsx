@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef } from "react"
 import { motion, useReducedMotion, useInView } from "motion/react"
 import { codeToHtml } from "shiki"
 
@@ -13,64 +13,44 @@ interface StreamingCodeProps {
 export function StreamingCode({ code, lang = "tsx", filename }: StreamingCodeProps) {
   const reduced = useReducedMotion()
   const containerRef = useRef<HTMLDivElement>(null)
+  const codeRef = useRef<HTMLDivElement>(null)
   const inView = useInView(containerRef, { once: true, margin: "-40px" })
-  const [fullHtml, setFullHtml] = useState("")
-  const [partialHtml, setPartialHtml] = useState("")
-  const [visibleChars, setVisibleChars] = useState(reduced ? code.length : 0)
-  const [streamDone, setStreamDone] = useState(reduced ? true : false)
+  const [html, setHtml] = useState("")
+  const [visibleLines, setVisibleLines] = useState(reduced ? Infinity : 0)
   const [started, setStarted] = useState(false)
   const trimmed = code.trim()
-  const lastHighlightedRef = useRef(0)
+  const totalLines = trimmed.split("\n").length
 
-  // Pre-render full syntax highlighting
+  // Syntax highlight the full code
   useEffect(() => {
-    codeToHtml(trimmed, { lang, theme: "vitesse-dark" }).then(setFullHtml)
+    codeToHtml(trimmed, { lang, theme: "vitesse-dark" }).then(setHtml)
   }, [trimmed, lang])
 
-  // Incrementally highlight partial code (on each new line)
+  // Start revealing when in view
   useEffect(() => {
-    if (!started || streamDone || reduced) return
-    const visible = trimmed.slice(0, visibleChars)
-    // Only re-highlight when a new line is completed (performance)
-    const lineCount = visible.split("\n").length
-    const lastLineCount = trimmed.slice(0, lastHighlightedRef.current).split("\n").length
-    if (lineCount > lastLineCount || visibleChars >= trimmed.length) {
-      lastHighlightedRef.current = visibleChars
-      codeToHtml(visible || " ", { lang, theme: "vitesse-dark" }).then(setPartialHtml)
-    }
-  }, [visibleChars, started, streamDone, trimmed, lang, reduced])
-
-  // Start streaming when in view
-  useEffect(() => {
-    if (inView && !started && !reduced) {
-      setStarted(true)
-    }
+    if (inView && !started && !reduced) setStarted(true)
   }, [inView, started, reduced])
 
-  // Character-by-character streaming
+  // Reveal lines progressively
   useEffect(() => {
-    if (!started || reduced) return
-    if (visibleChars >= trimmed.length) {
-      setStreamDone(true)
-      return
-    }
-
-    // Variable speed: faster on whitespace/punctuation, slower on keywords
-    const char = trimmed[visibleChars]
-    const isNewline = char === "\n"
-    const isSpace = char === " "
-    const baseSpeed = 18 // ms per char (~55 chars/sec)
-    const delay = isNewline ? 80 : isSpace ? 12 : baseSpeed
-
-    const timer = setTimeout(() => {
-      setVisibleChars(v => Math.min(v + 1, trimmed.length))
-    }, delay)
-
+    if (!started || reduced || visibleLines >= totalLines) return
+    const delay = visibleLines === 0 ? 100 : 120
+    const timer = setTimeout(() => setVisibleLines(v => v + 1), delay)
     return () => clearTimeout(timer)
-  }, [started, visibleChars, trimmed, reduced])
+  }, [started, visibleLines, totalLines, reduced])
 
-  // Build visible code string
-  const visibleCode = reduced ? trimmed : trimmed.slice(0, visibleChars)
+  // Control line visibility via DOM after Shiki renders
+  useEffect(() => {
+    if (!codeRef.current || !html) return
+    const lines = codeRef.current.querySelectorAll(".line")
+    lines.forEach((line, i) => {
+      const el = line as HTMLElement
+      el.style.transition = "opacity 0.2s ease-out"
+      el.style.opacity = reduced || i < visibleLines ? "1" : "0"
+    })
+  }, [visibleLines, html, reduced])
+
+  const allVisible = reduced || visibleLines >= totalLines
 
   return (
     <div ref={containerRef}>
@@ -84,42 +64,26 @@ export function StreamingCode({ code, lang = "tsx", filename }: StreamingCodePro
             <span className="text-xs text-white/40 font-mono">{filename}</span>
           </div>
         )}
-        <div className="p-5 overflow-x-auto text-[13px] leading-[1.7] relative">
-          {fullHtml && streamDone ? (
-            // Show fully highlighted code when streaming is done
+        <div className="p-5 overflow-x-auto text-[13px] leading-[1.7]">
+          {html ? (
             <div
+              ref={codeRef}
               className="[&_pre]:!bg-transparent [&_code]:!bg-transparent"
-              dangerouslySetInnerHTML={{ __html: fullHtml }}
+              dangerouslySetInnerHTML={{ __html: html }}
             />
-          ) : partialHtml ? (
-            // Show syntax-highlighted partial code with cursor
-            <div className="relative">
-              <div
-                className="[&_pre]:!bg-transparent [&_code]:!bg-transparent"
-                dangerouslySetInnerHTML={{ __html: partialHtml }}
-              />
-              {!streamDone && started && (
-                <span className="absolute inline-block w-[2px] h-[1.1em] bg-primary animate-[cursor-blink_1s_steps(2)_infinite]" style={{ bottom: "1.2em", right: "auto" }} />
-              )}
-            </div>
           ) : (
-            // Fallback: plain text before first highlight runs
-            <pre className="!bg-transparent font-mono whitespace-pre">
-              <code className="text-white/70">
-                {visibleCode}
-                {!streamDone && started && (
-                  <span className="inline-block w-[2px] h-[1.1em] bg-primary align-text-bottom ml-px animate-[cursor-blink_1s_steps(2)_infinite]" />
-                )}
-              </code>
+            // Invisible placeholder to reserve height before Shiki loads
+            <pre className="!bg-transparent font-mono whitespace-pre opacity-0 select-none" aria-hidden>
+              <code>{trimmed}</code>
             </pre>
           )}
         </div>
       </div>
 
-      {/* Rendered output preview — materializes after code finishes streaming */}
+      {/* Output preview — appears after code is fully revealed */}
       <motion.div
         initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-        animate={streamDone ? { opacity: 1, y: 0 } : {}}
+        animate={allVisible ? { opacity: 1, y: 0 } : {}}
         transition={{ type: "spring", damping: 25, stiffness: 200, delay: 0.3 }}
       >
         <div className="mt-3 flex items-start gap-3">
@@ -130,7 +94,7 @@ export function StreamingCode({ code, lang = "tsx", filename }: StreamingCodePro
             </div>
             <motion.div
               initial={reduced ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.96 }}
-              animate={streamDone ? { opacity: 1, scale: 1 } : {}}
+              animate={allVisible ? { opacity: 1, scale: 1 } : {}}
               transition={{ type: "spring", damping: 30, stiffness: 300, delay: 0.5 }}
             >
               <WeatherPreview />
@@ -142,7 +106,6 @@ export function StreamingCode({ code, lang = "tsx", filename }: StreamingCodePro
   )
 }
 
-/** Mini weather card that demonstrates the rendered generative UI output */
 function WeatherPreview() {
   return (
     <div className="rounded-lg border border-border bg-card p-3 max-w-[200px]">

@@ -2,13 +2,16 @@ import { handler } from "@fabrik-sdk/ui/server"
 import { createMockProvider } from "@/lib/mock-provider"
 
 // ---------------------------------------------------------------------------
-// Production — just one line:
+// Production — use AI SDK with any provider:
 //
-//   export const POST = handler({ model: "openai:gpt-4o" })
+//   import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+//   import { google } from "@ai-sdk/google"
+//   export const POST = handler({
+//     provider: aiSdk({ model: google("gemini-3-flash-preview") })
+//   })
 //
-// Reads OPENAI_API_KEY from .env.local automatically.
-// Swap to "anthropic:claude-sonnet-4-20250514" or "google:gemini-2.0-flash".
+// Reads GOOGLE_GENERATIVE_AI_API_KEY from .env.local automatically.
 // ---------------------------------------------------------------------------
 
-// Demo mode: uses mock provider (no API key needed)
+// Demo mode: mock provider (no API key needed)
 export const POST = handler({ provider: createMockProvider() })

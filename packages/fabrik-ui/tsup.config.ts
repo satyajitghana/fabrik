@@ -33,6 +33,7 @@ export default defineConfig([
       "adapters/google": "src/adapters/google.ts",
       "adapters/custom": "src/adapters/custom.ts",
       "adapters/ai-sdk": "src/adapters/ai-sdk.ts",
+      "adapters/agui": "src/adapters/agui.ts",
       "adapters/index": "src/adapters/index.ts",
     },
   },
@@ -55,5 +56,9 @@ export default defineConfig([
   {
     ...shared,
     entry: { "chat/index": "src/chat/index.ts" },
+  },
+  {
+    ...shared,
+    entry: { "lang/index": "src/lang/index.ts" },
   },
 ])

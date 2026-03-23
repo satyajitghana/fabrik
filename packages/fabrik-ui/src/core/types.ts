@@ -20,6 +20,7 @@ export type Part =
   | ImagePart
   | AskPart
   | ArtifactPart
+  | UiPart
 
 export interface TextPart {
   type: "text"
@@ -71,6 +72,13 @@ export interface ArtifactPart {
   title: string
   language: string // "html", "typescript", "python", "markdown", "svg", etc.
   content: string
+  status: "streaming" | "done"
+}
+
+export interface UiPart {
+  type: "ui"
+  id: string
+  dslText: string
   status: "streaming" | "done"
 }
 
@@ -173,6 +181,10 @@ export type StreamEvent =
   | { type: "artifact_start"; id: string; title: string; language: string }
   | { type: "artifact_delta"; id: string; delta: string }
   | { type: "artifact_done"; id: string }
+  // Fabrik Lang DSL
+  | { type: "ui_start"; id: string }
+  | { type: "ui_delta"; id: string; delta: string }
+  | { type: "ui_done"; id: string }
   // Elicitation
   | { type: "ask"; id: string; config: AskConfig }
   // Internal: raw tool calls (not exposed to developer, used by client)

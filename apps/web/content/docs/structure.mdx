@@ -30,10 +30,10 @@ Fabrik UI ships multiple entry points so you only import what you need:
 | `@fabrik-sdk/ui` | `defineComponent`, `defineTool`, types | Both |
 | `@fabrik-sdk/ui/react` | `Fabrik`, `Chat`, `Fab`, `useChat`, `Message` | Client |
 | `@fabrik-sdk/ui/server` | `handler`, `server` adapter | Server + Client |
-| `@fabrik-sdk/ui/openai` | OpenAI provider | Server |
-| `@fabrik-sdk/ui/anthropic` | Anthropic provider | Server |
-| `@fabrik-sdk/ui/google` | Google Gemini provider | Server |
-| `@fabrik-sdk/ui/ai-sdk` | Vercel AI SDK adapter | Server |
+| `@fabrik-sdk/ui/ai-sdk` | AI SDK adapter (recommended) — use with `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, etc. | Server |
+| `@fabrik-sdk/ui/openai` | Native OpenAI provider (lightweight alternative) | Server |
+| `@fabrik-sdk/ui/anthropic` | Native Anthropic provider (lightweight alternative) | Server |
+| `@fabrik-sdk/ui/google` | Native Google Gemini provider (lightweight alternative) | Server |
 | `@fabrik-sdk/ui/custom` | Custom provider adapter | Server |
 | `@fabrik-sdk/ui/chat` | Chat UI primitives | Client |
 | `@fabrik-sdk/ui/pages` | Multi-page routing | Client |

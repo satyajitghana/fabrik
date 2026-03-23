@@ -1,191 +1,166 @@
 /**
- * AI SDK adapter — wraps any Vercel AI SDK provider to work with fabrik-ui.
+ * AI SDK adapter — wraps Vercel AI SDK's streamText() to work with Fabrik.
  *
- * This adapter works with ALL AI SDK providers:
- * - @ai-sdk/openai
- * - @ai-sdk/anthropic
- * - @ai-sdk/google
- * - @ai-sdk/mistral
- * - @ai-sdk/amazon-bedrock
- * - @ai-sdk/azure
- * - @ai-sdk/cohere
- * - @ai-sdk/groq
- * - @ai-sdk/deepseek
- * - @ai-sdk/fireworks
- * - ... and 40+ more
+ * This gives you access to ALL 53+ AI SDK providers:
+ *   @ai-sdk/openai, @ai-sdk/anthropic, @ai-sdk/google, @ai-sdk/mistral,
+ *   @ai-sdk/amazon-bedrock, @ai-sdk/azure, @ai-sdk/cohere, @ai-sdk/groq,
+ *   @ai-sdk/deepseek, @ai-sdk/fireworks, @ai-sdk/xai, and more.
  *
- * Usage:
+ * Usage (server-side API route):
  *   import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
- *   import { openai } from "@ai-sdk/openai"
- *
- *   const provider = aiSdk({ model: openai("gpt-4o") })
- *
- * Or with Anthropic:
- *   import { anthropic } from "@ai-sdk/anthropic"
- *   const provider = aiSdk({ model: anthropic("claude-sonnet-4-20250514") })
- *
- * Or with any model:
  *   import { google } from "@ai-sdk/google"
- *   const provider = aiSdk({ model: google("gemini-2.0-flash") })
+ *   import { handler } from "@fabrik-sdk/ui/server"
+ *
+ *   export const POST = handler({
+ *     provider: aiSdk({ model: google("gemini-3-flash-preview") })
+ *   })
+ *
+ * Works with any AI SDK provider:
+ *   import { openai } from "@ai-sdk/openai"
+ *   aiSdk({ model: openai("gpt-4o") })
+ *
+ *   import { anthropic } from "@ai-sdk/anthropic"
+ *   aiSdk({ model: anthropic("claude-sonnet-4-20250514") })
  */
 
-import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "../core/types"
-
-// The AI SDK LanguageModel interface (we accept anything with this shape)
-interface AiSdkModel {
-  readonly modelId: string
-  readonly provider: string
-  doStream: (options: Record<string, unknown>) => Promise<{
-    stream: ReadableStream<unknown>
-    rawCall?: unknown
-  }>
-}
-
-/** Discriminated union of AI SDK stream chunk types we handle */
-type AiSdkStreamPart =
-  | { type: "text-delta"; textDelta: string }
-  | { type: "tool-call"; toolCallId: string; toolName: string; args: string | Record<string, unknown> }
-  | { type: "tool-call-streaming-start"; toolCallId: string; toolName: string }
-  | { type: "tool-call-delta"; toolCallId: string; argsTextDelta: string }
-  | { type: "tool-result"; toolCallId: string; result: unknown }
-  | { type: "reasoning"; text: string }
-  | { type: "finish" }
-  | { type: "error"; error: unknown }
+import type {
+  Provider,
+  StreamEvent,
+  StreamOptions,
+  FabrikMessage,
+} from "../core/types"
 
 interface AiSdkOptions {
   /** Any AI SDK model instance (from @ai-sdk/openai, @ai-sdk/anthropic, etc.) */
-  model: AiSdkModel
+  model: Record<string, unknown> & { modelId?: string; provider?: string }
 }
 
 export function aiSdk(options: AiSdkOptions): Provider {
   const { model } = options
+  const modelId = String(model.modelId ?? "unknown")
+  const providerName = String(model.provider ?? "ai-sdk")
 
   return {
-    name: `ai-sdk/${model.provider}`,
+    name: `ai-sdk/${providerName}`,
 
     async *stream(streamOptions: StreamOptions): AsyncIterable<StreamEvent> {
       const runId = Math.random().toString(36).slice(2)
       yield { type: "start", runId }
 
       try {
+        // Dynamic import — `ai` is a peer dependency
+        const { streamText, jsonSchema } = await import("ai")
+
         // Convert fabrik messages to AI SDK format
         const messages = toAiSdkMessages(streamOptions.messages)
 
-        // Convert tool specs to AI SDK tool format
-        const tools: Record<string, Record<string, unknown>> = {}
+        // Convert tool specs to AI SDK tool format using jsonSchema()
+        const tools: Record<string, unknown> = {}
         for (const spec of streamOptions.tools) {
           tools[spec.name] = {
             description: spec.description,
-            parameters: spec.parameters,
+            parameters: jsonSchema(spec.parameters),
           }
         }
 
-        // Call the model's stream method
-        const { stream } = await model.doStream({
-          inputFormat: "messages",
-          mode: {
-            type: Object.keys(tools).length > 0 ? "regular" : "regular",
-            tools: Object.entries(tools).map(([name, tool]) => ({
-              type: "function",
-              name,
-              description: tool.description,
-              parameters: tool.parameters,
-            })),
-          },
-          prompt: messages,
-          system: streamOptions.systemPrompt,
+        // Stream using the AI SDK
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = (streamText as (...args: unknown[]) => ReturnType<typeof streamText>)({
+          model,
+          messages,
+          system: streamOptions.systemPrompt || undefined,
+          tools: Object.keys(tools).length > 0 ? tools : undefined,
           abortSignal: streamOptions.signal,
-        })
+        } as Record<string, unknown>)
 
-        // Process the stream
-        const reader = (stream as ReadableStream<AiSdkStreamPart>).getReader()
-        const toolCallArgs = new Map<string, string>()
+        // DSL detection state
+        let textBuffer = ""
+        let inDslMode = false
+        const uiId = generateId()
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        // Process the fullStream — iterate over stream parts
+        for await (const part of result.fullStream) {
+          const p = part as Record<string, unknown>
+          const type = p.type as string
 
-          // AI SDK stream parts
-          switch (value.type) {
+          switch (type) {
             case "text-delta": {
-              yield { type: "text", delta: value.textDelta }
+              // v5: textDelta, v6: text
+              const delta = (p.textDelta ?? p.text ?? "") as string
+              if (!delta) break
+
+              textBuffer += delta
+
+              // Detect DSL mode: look for "root =" pattern
+              if (!inDslMode) {
+                // Check if we're entering DSL mode
+                const rootMatch = textBuffer.match(/(?:^|\n)\s*root\s*=\s*/m)
+                if (rootMatch) {
+                  // Emit any pre-DSL text as regular text
+                  const preText = textBuffer.slice(0, rootMatch.index ?? 0).trim()
+                  if (preText) yield { type: "text", delta: preText }
+
+                  // Switch to DSL mode
+                  inDslMode = true
+                  yield { type: "ui_start", id: uiId }
+                  // Emit the DSL portion so far
+                  const dslSoFar = textBuffer.slice(rootMatch.index ?? 0)
+                  if (dslSoFar) yield { type: "ui_delta", id: uiId, delta: dslSoFar }
+                } else {
+                  // Not in DSL mode yet — emit as regular text
+                  yield { type: "text", delta }
+                }
+              } else {
+                // Already in DSL mode — emit as DSL delta
+                yield { type: "ui_delta", id: uiId, delta }
+              }
               break
             }
 
             case "tool-call": {
-              // AI SDK sends complete tool calls
-              yield {
-                type: "tool_call_start",
-                id: value.toolCallId,
-                toolName: value.toolName,
-              }
-              yield {
-                type: "tool_call_done",
-                id: value.toolCallId,
-                toolName: value.toolName,
-                args: typeof value.args === "string" ? JSON.parse(value.args) : value.args,
-              }
-              break
-            }
+              const callId = (p.toolCallId ?? p.id ?? generateId()) as string
+              const toolName = (p.toolName ?? p.name ?? "") as string
+              // v5: args, v6: input
+              const rawArgs = p.args ?? p.input ?? {}
+              const args = typeof rawArgs === "string"
+                ? JSON.parse(rawArgs) as Record<string, unknown>
+                : rawArgs as Record<string, unknown>
 
-            case "tool-call-streaming-start": {
-              yield {
-                type: "tool_call_start",
-                id: value.toolCallId,
-                toolName: value.toolName,
-              }
-              toolCallArgs.set(value.toolCallId, "")
-              break
-            }
-
-            case "tool-call-delta": {
-              const current = toolCallArgs.get(value.toolCallId) ?? ""
-              toolCallArgs.set(value.toolCallId, current + value.argsTextDelta)
-              yield {
-                type: "tool_call_delta",
-                id: value.toolCallId,
-                delta: value.argsTextDelta,
-              }
-              break
-            }
-
-            case "tool-result": {
-              // Tool results are handled by the FabrikClient, not here
-              break
-            }
-
-            case "reasoning": {
-              // Map to thinking events
-              yield { type: "thinking_start", id: "thinking" }
-              yield { type: "thinking_delta", id: "thinking", delta: value.text }
-              break
-            }
-
-            case "finish": {
-              // Stream is done
+              yield { type: "tool_call_start", id: callId, toolName }
+              yield { type: "tool_call_done", id: callId, toolName, args }
               break
             }
 
             case "error": {
-              yield { type: "error", message: String(value.error) }
+              yield { type: "error", message: String(p.error ?? "Unknown error") }
               break
             }
+
+            // Ignore: step-start, step-finish, tool-result, finish, source, reasoning, raw
           }
         }
 
+        // Close DSL if we were in DSL mode
+        if (inDslMode) {
+          yield { type: "ui_done", id: uiId }
+        }
+
         yield { type: "done" }
-      } catch (error) {
-        yield { type: "error", message: (error as Error).message }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error)
+        yield { type: "error", message }
       }
     },
   }
 }
 
 // ---------------------------------------------------------------------------
-// Message conversion
+// Message conversion: Fabrik → AI SDK format
 // ---------------------------------------------------------------------------
 
-function toAiSdkMessages(messages: FabrikMessage[]): Record<string, unknown>[] {
+function toAiSdkMessages(
+  messages: FabrikMessage[],
+): Array<{ role: string; content: string }> {
   return messages
     .filter((m) => m.role !== "system")
     .map((m) => {
@@ -196,7 +171,11 @@ function toAiSdkMessages(messages: FabrikMessage[]): Record<string, unknown>[] {
 
       return {
         role: m.role === "assistant" ? "assistant" : "user",
-        content: text || "(empty)",
+        content: text || " ",
       }
     })
+}
+
+function generateId(): string {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 }

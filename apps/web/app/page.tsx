@@ -143,7 +143,7 @@ function Hero() {
 
 function InstallCommand() {
   const [copied, setCopied] = useState(false)
-  const cmd = "pnpm add @fabrik-sdk/ui zod motion"
+  const cmd = "pnpm add @fabrik-sdk/ui ai @ai-sdk/google zod motion"
   const copy = () => { navigator.clipboard.writeText(cmd); setCopied(true); setTimeout(() => setCopied(false), 2000) }
 
   return (
@@ -158,12 +158,14 @@ function InstallCommand() {
 }
 
 const EXAMPLE_CODE = `import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
-import { openai } from "@fabrik-sdk/ui/openai"
+import { server } from "@fabrik-sdk/ui/server"
+
+const provider = server({ url: "/api/chat" })
 
 export default function App() {
   return (
     <Fabrik
-      provider={openai({ model: "gpt-4o" })}
+      provider={provider}
       components={[weatherCard, barChart]}
     >
       <Chat />

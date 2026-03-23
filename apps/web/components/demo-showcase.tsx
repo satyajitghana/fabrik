@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, useInView, useReducedMotion, AnimatePresence } from "motion/react"
-import { PiFeatherDuotone } from "react-icons/pi"
+import { PiFeatherDuotone, PiCheckBold, PiCodeBold, PiGlobeBold } from "react-icons/pi"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,7 +15,11 @@ type DemoItemType =
   | "component"
   | "skeleton"
   | "typing"
-  | "elicitation"
+  | "elicitation-choice"
+  | "elicitation-confirm"
+  | "artifact-html"
+  | "artifact-code"
+  | "code-diff"
 
 interface DemoItem {
   type: DemoItemType
@@ -24,6 +28,10 @@ interface DemoItem {
   stepDuration?: string
   componentType?: "weather" | "chart" | "stats"
   options?: string[]
+  selectedOption?: string
+  confirmLabels?: { accept: string; deny: string }
+  artifactTitle?: string
+  diffLines?: { type: "add" | "remove" | "context"; text: string }[]
 }
 
 interface ScriptEntry {
@@ -32,76 +40,91 @@ interface ScriptEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Demo script (~20 seconds total)
+// Demo script (~30 seconds, comprehensive)
 // ---------------------------------------------------------------------------
 
 const DEMO_SCRIPT: ScriptEntry[] = [
   // --- Weather flow ---
-  { delay: 0, item: { type: "user", content: "Show me the weather in San Francisco" } },
-  { delay: 1500, item: { type: "typing" } },
-  { delay: 2000, item: { type: "step", content: "Connecting to Open-Meteo API\u2026", stepStatus: "running" } },
-  { delay: 2800, item: { type: "step", content: "Connecting to Open-Meteo API\u2026", stepStatus: "done", stepDuration: "0.4s" } },
-  { delay: 3200, item: { type: "step", content: "Fetching weather data\u2026", stepStatus: "running" } },
-  { delay: 3800, item: { type: "step", content: "Fetching weather data\u2026", stepStatus: "done", stepDuration: "0.6s" } },
-  { delay: 4200, item: { type: "assistant-text", content: "Here\u2019s the live weather for San Francisco!" } },
-  { delay: 5000, item: { type: "skeleton" } },
-  { delay: 5500, item: { type: "component", componentType: "weather" } },
+  { delay: 0, item: { type: "user", content: "What's the weather in San Francisco?" } },
+  { delay: 1200, item: { type: "typing" } },
+  { delay: 1600, item: { type: "step", content: "Calling weather API…", stepStatus: "running" } },
+  { delay: 2400, item: { type: "step", content: "Calling weather API…", stepStatus: "done", stepDuration: "0.4s" } },
+  { delay: 2800, item: { type: "assistant-text", content: "Here's the current weather:" } },
+  { delay: 3200, item: { type: "skeleton" } },
+  { delay: 3700, item: { type: "component", componentType: "weather" } },
 
-  // --- Chart flow ---
-  { delay: 7000, item: { type: "user", content: "Revenue chart" } },
-  { delay: 8200, item: { type: "step", content: "Querying database\u2026", stepStatus: "running" } },
-  { delay: 8800, item: { type: "step", content: "Querying database\u2026", stepStatus: "done", stepDuration: "0.3s" } },
-  { delay: 9500, item: { type: "assistant-text", content: "Here\u2019s the quarterly revenue data:" } },
-  { delay: 10000, item: { type: "skeleton" } },
-  { delay: 10500, item: { type: "component", componentType: "chart" } },
+  // --- Elicitation: choice pills ---
+  { delay: 5200, item: { type: "elicitation-choice", content: "Want to see more data?", options: ["Revenue chart", "Dashboard stats", "Both"] } },
+  { delay: 6500, item: { type: "elicitation-choice", content: "Want to see more data?", options: ["Revenue chart", "Dashboard stats", "Both"], selectedOption: "Both" } },
 
-  // --- Dashboard flow ---
-  { delay: 12000, item: { type: "user", content: "Dashboard stats" } },
-  { delay: 13200, item: { type: "step", content: "Aggregating metrics\u2026", stepStatus: "running" } },
-  { delay: 13800, item: { type: "step", content: "Aggregating metrics\u2026", stepStatus: "done", stepDuration: "0.5s" } },
-  { delay: 14000, item: { type: "assistant-text", content: "Here are your dashboard stats:" } },
-  { delay: 14800, item: { type: "skeleton" } },
-  { delay: 15300, item: { type: "component", componentType: "stats" } },
+  // --- Chart + Stats flow ---
+  { delay: 7000, item: { type: "typing" } },
+  { delay: 7400, item: { type: "step", content: "Querying analytics DB…", stepStatus: "running" } },
+  { delay: 8000, item: { type: "step", content: "Querying analytics DB…", stepStatus: "done", stepDuration: "0.3s" } },
+  { delay: 8200, item: { type: "step", content: "Aggregating metrics…", stepStatus: "running" } },
+  { delay: 8800, item: { type: "step", content: "Aggregating metrics…", stepStatus: "done", stepDuration: "0.5s" } },
+  { delay: 9200, item: { type: "assistant-text", content: "Here's your quarterly revenue and dashboard:" } },
+  { delay: 9600, item: { type: "skeleton" } },
+  { delay: 10100, item: { type: "component", componentType: "chart" } },
+  { delay: 11000, item: { type: "skeleton" } },
+  { delay: 11500, item: { type: "component", componentType: "stats" } },
 
-  // --- Elicitation ---
-  { delay: 16000, item: { type: "elicitation", content: "Would you like a detailed breakdown?", options: ["Yes", "No"] } },
+  // --- Artifact: HTML preview ---
+  { delay: 13000, item: { type: "user", content: "Generate a landing page hero" } },
+  { delay: 14200, item: { type: "typing" } },
+  { delay: 14600, item: { type: "step", content: "Generating HTML…", stepStatus: "running" } },
+  { delay: 15400, item: { type: "step", content: "Generating HTML…", stepStatus: "done", stepDuration: "0.8s" } },
+  { delay: 15800, item: { type: "assistant-text", content: "Here's a hero section:" } },
+  { delay: 16300, item: { type: "artifact-html", artifactTitle: "hero.html" } },
+
+  // --- Code diff ---
+  { delay: 18500, item: { type: "user", content: "Refactor the Button component to use CVA" } },
+  { delay: 19700, item: { type: "typing" } },
+  { delay: 20100, item: { type: "step", content: "Analyzing component…", stepStatus: "running" } },
+  { delay: 20700, item: { type: "step", content: "Analyzing component…", stepStatus: "done", stepDuration: "0.3s" } },
+  { delay: 21100, item: { type: "assistant-text", content: "Here's the refactor:" } },
+  { delay: 21500, item: {
+    type: "code-diff",
+    artifactTitle: "button.tsx",
+    diffLines: [
+      { type: "remove", text: 'className={`btn ${variant}`}' },
+      { type: "add", text: 'className={buttonVariants({ variant })}' },
+      { type: "context", text: "  {...props}" },
+      { type: "context", text: "/>" },
+    ],
+  }},
+
+  // --- Confirmation elicitation ---
+  { delay: 23500, item: { type: "elicitation-confirm", content: "Apply this change?", confirmLabels: { accept: "Apply", deny: "Discard" } } },
 ]
 
-const TOTAL_DURATION = 18000
+const TOTAL_DURATION = 26000
 const RESTART_PAUSE = 3000
 
 // ---------------------------------------------------------------------------
-// Spring configs (matching page.tsx)
+// Spring configs
 // ---------------------------------------------------------------------------
 
 const spring = { type: "spring" as const, damping: 30, stiffness: 300 }
 const gentleSpring = { type: "spring" as const, damping: 25, stiffness: 200 }
 
 // ---------------------------------------------------------------------------
-// Mini demo components (inline, no external deps)
+// Mini demo components
 // ---------------------------------------------------------------------------
 
 function DemoWeatherCard() {
   return (
     <div className="rounded-xl border border-border bg-card p-4 max-w-[280px] shadow-sm">
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-        San Francisco
-      </p>
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">San Francisco</p>
       <div className="flex items-baseline gap-1 mt-1">
         <span className="text-[40px] font-light tabular-nums">64</span>
-        <span className="text-sm text-muted-foreground">&deg;F</span>
-        <span className="ml-auto text-2xl" aria-hidden="true">
-          &#9728;&#65039;
-        </span>
+        <span className="text-sm text-muted-foreground">°F</span>
+        <span className="ml-auto text-2xl" aria-hidden>☀️</span>
       </div>
       <p className="text-xs text-muted-foreground">Sunny</p>
       <div className="flex gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-        <span>
-          <span aria-hidden="true">&#128167;</span> 45%
-        </span>
-        <span>
-          <span aria-hidden="true">&#128168;</span> 6.6 mph
-        </span>
+        <span>💧 45%</span>
+        <span>💨 6.6 mph</span>
       </div>
     </div>
   )
@@ -109,10 +132,10 @@ function DemoWeatherCard() {
 
 function DemoBarChart() {
   const bars = [
-    { label: "Q1", value: 65, color: "var(--chart-1, #0d9488)" },
-    { label: "Q2", value: 75, color: "var(--chart-2, #6366f1)" },
-    { label: "Q3", value: 85, color: "var(--chart-3, #f59e0b)" },
-    { label: "Q4", value: 95, color: "var(--chart-4, #ef4444)" },
+    { label: "Q1", value: 65, color: "var(--chart-1)" },
+    { label: "Q2", value: 75, color: "var(--chart-2)" },
+    { label: "Q3", value: 85, color: "var(--chart-3)" },
+    { label: "Q4", value: 95, color: "var(--chart-4)" },
   ]
 
   return (
@@ -151,11 +174,7 @@ function DemoStatsGrid() {
         <div key={s.label} className="rounded-lg border border-border bg-card p-3 text-center">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
           <p className="text-lg font-semibold mt-0.5 tabular-nums">{s.value}</p>
-          <p
-            className={`text-[11px] font-medium ${
-              s.up ? "text-[var(--success,#10b981)]" : "text-destructive"
-            }`}
-          >
+          <p className={`text-[11px] font-medium ${s.up ? "text-[var(--success)]" : "text-destructive"}`}>
             {s.change}
           </p>
         </div>
@@ -164,23 +183,67 @@ function DemoStatsGrid() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Skeleton loader
-// ---------------------------------------------------------------------------
+function DemoArtifactHtml({ title }: { title: string }) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden shadow-sm max-w-[360px]">
+      <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b border-border">
+        <PiGlobeBold className="w-3 h-3 text-muted-foreground" />
+        <span className="text-[11px] font-mono text-muted-foreground">{title}</span>
+      </div>
+      <div className="bg-card p-4">
+        <div className="bg-primary/10 rounded-lg p-4 text-center">
+          <div className="text-lg font-bold text-foreground">Welcome to Acme</div>
+          <p className="text-xs text-muted-foreground mt-1">Build something amazing today.</p>
+          <div className="mt-3 inline-flex rounded-md bg-primary px-3 py-1.5 text-[10px] font-medium text-primary-foreground">
+            Get Started →
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DemoCodeDiff({ title, lines }: { title: string; lines: DemoItem["diffLines"] }) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden shadow-sm max-w-[360px]">
+      <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b border-border">
+        <PiCodeBold className="w-3 h-3 text-muted-foreground" />
+        <span className="text-[11px] font-mono text-muted-foreground">{title}</span>
+      </div>
+      <div className="bg-card font-mono text-[11px] leading-relaxed">
+        {lines?.map((line, i) => (
+          <div
+            key={i}
+            className={`px-3 py-0.5 ${
+              line.type === "add" ? "bg-green-500/10 text-green-600 dark:text-green-400" :
+              line.type === "remove" ? "bg-red-500/10 text-red-600 dark:text-red-400 line-through" :
+              "text-muted-foreground"
+            }`}
+          >
+            <span className="select-none opacity-50 mr-2">
+              {line.type === "add" ? "+" : line.type === "remove" ? "−" : " "}
+            </span>
+            {line.text}
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 px-3 py-2 border-t border-border bg-muted/30">
+        <span className="rounded-md bg-green-500/15 text-green-600 dark:text-green-400 px-2.5 py-1 text-[10px] font-medium cursor-default">Accept</span>
+        <span className="rounded-md bg-red-500/10 text-red-600 dark:text-red-400 px-2.5 py-1 text-[10px] font-medium cursor-default">Reject</span>
+      </div>
+    </div>
+  )
+}
 
 function SkeletonLoader() {
   return (
-    <div className="space-y-2 max-w-[280px]" aria-hidden="true">
+    <div className="space-y-2 max-w-[280px]" aria-hidden>
       <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
       <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
       <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Typing indicator
-// ---------------------------------------------------------------------------
 
 function TypingDots() {
   return (
@@ -190,12 +253,7 @@ function TypingDots() {
           key={i}
           className="block h-1.5 w-1.5 rounded-full bg-muted-foreground/40"
           animate={{ y: [0, -4, 0] }}
-          transition={{
-            duration: 0.6,
-            repeat: Infinity,
-            delay: i * 0.15,
-            ease: "easeInOut",
-          }}
+          transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
         />
       ))}
     </div>
@@ -206,49 +264,30 @@ function TypingDots() {
 // Streaming text hook
 // ---------------------------------------------------------------------------
 
-function useStreamingText(
-  text: string,
-  active: boolean,
-  reduced: boolean | null,
-): { visibleText: string; done: boolean } {
+function useStreamingText(text: string, active: boolean, reduced: boolean | null) {
   const [charIndex, setCharIndex] = useState(0)
 
   useEffect(() => {
-    if (reduced || !active) return
-    if (charIndex >= text.length) return
-
+    if (reduced || !active || charIndex >= text.length) return
     const char = text[charIndex]
-    const isNewline = char === "\n"
-    const isSpace = char === " "
-    const delay = isNewline ? 40 : isSpace ? 10 : 18
-
-    const timer = setTimeout(() => {
-      setCharIndex((prev) => Math.min(prev + 1, text.length))
-    }, delay)
-
+    const delay = char === "\n" ? 40 : char === " " ? 10 : 18
+    const timer = setTimeout(() => setCharIndex(prev => Math.min(prev + 1, text.length)), delay)
     return () => clearTimeout(timer)
   }, [active, charIndex, text, reduced])
 
-  useEffect(() => {
-    setCharIndex(0)
-  }, [text])
+  useEffect(() => { setCharIndex(0) }, [text])
 
-  const visibleText = reduced ? text : text.slice(0, charIndex)
-  const done = reduced ? true : charIndex >= text.length
-
-  return { visibleText, done }
+  return {
+    visibleText: reduced ? text : text.slice(0, charIndex),
+    done: reduced ? true : charIndex >= text.length,
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Individual demo message renderer
+// Message renderers
 // ---------------------------------------------------------------------------
 
-interface DemoMessageProps {
-  item: DemoItem
-  reduced: boolean | null
-}
-
-function DemoMessage({ item, reduced }: DemoMessageProps) {
+function DemoMessage({ item, reduced }: { item: DemoItem; reduced: boolean | null }) {
   switch (item.type) {
     case "user":
       return <UserBubble text={item.content ?? ""} reduced={reduced} />
@@ -260,30 +299,32 @@ function DemoMessage({ item, reduced }: DemoMessageProps) {
       return <ComponentItem componentType={item.componentType ?? "weather"} reduced={reduced} />
     case "skeleton":
       return (
-        <motion.div
-          initial={reduced ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="pl-8"
-        >
+        <motion.div initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="pl-8">
           <SkeletonLoader />
         </motion.div>
       )
     case "typing":
       return (
-        <motion.div
-          initial={reduced ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="pl-8"
-        >
+        <motion.div initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="pl-8">
           <TypingDots />
         </motion.div>
       )
-    case "elicitation":
-      return <ElicitationItem item={item} reduced={reduced} />
+    case "elicitation-choice":
+      return <ChoiceElicitation item={item} reduced={reduced} />
+    case "elicitation-confirm":
+      return <ConfirmElicitation item={item} reduced={reduced} />
+    case "artifact-html":
+      return (
+        <motion.div initial={reduced ? false : { opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ ...gentleSpring, delay: 0.05 }} className="pl-8">
+          <DemoArtifactHtml title={item.artifactTitle ?? "preview.html"} />
+        </motion.div>
+      )
+    case "code-diff":
+      return (
+        <motion.div initial={reduced ? false : { opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ ...gentleSpring, delay: 0.05 }} className="pl-8">
+          <DemoCodeDiff title={item.artifactTitle ?? "diff"} lines={item.diffLines} />
+        </motion.div>
+      )
     default:
       return null
   }
@@ -291,19 +332,11 @@ function DemoMessage({ item, reduced }: DemoMessageProps) {
 
 function UserBubble({ text, reduced }: { text: string; reduced: boolean | null }) {
   const { visibleText, done } = useStreamingText(text, true, reduced)
-
   return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={spring}
-      className="flex justify-end"
-    >
+    <motion.div initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="flex justify-end">
       <div className="rounded-2xl rounded-br-md bg-primary text-primary-foreground px-3.5 py-2 text-sm max-w-[80%]">
         {visibleText}
-        {!done && (
-          <span className="inline-block w-[2px] h-[1em] bg-primary-foreground/50 align-text-bottom ml-px animate-[cursor-blink_1s_steps(2)_infinite]" />
-        )}
+        {!done && <span className="inline-block w-[2px] h-[1em] bg-primary-foreground/50 align-text-bottom ml-px animate-[cursor-blink_1s_steps(2)_infinite]" />}
       </div>
     </motion.div>
   )
@@ -311,22 +344,14 @@ function UserBubble({ text, reduced }: { text: string; reduced: boolean | null }
 
 function AssistantText({ text, reduced }: { text: string; reduced: boolean | null }) {
   const { visibleText, done } = useStreamingText(text, true, reduced)
-
   return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={spring}
-      className="flex items-start gap-2"
-    >
+    <motion.div initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="flex items-start gap-2">
       <div className="h-6 w-6 rounded-lg bg-primary flex items-center justify-center shrink-0 mt-0.5">
         <PiFeatherDuotone className="w-3 h-3 text-primary-foreground" />
       </div>
       <div className="text-sm text-foreground leading-relaxed">
         {visibleText}
-        {!done && (
-          <span className="inline-block w-[2px] h-[1em] bg-foreground/30 align-text-bottom ml-px animate-[cursor-blink_1s_steps(2)_infinite]" />
-        )}
+        {!done && <span className="inline-block w-[2px] h-[1em] bg-foreground/30 align-text-bottom ml-px animate-[cursor-blink_1s_steps(2)_infinite]" />}
       </div>
     </motion.div>
   )
@@ -334,98 +359,55 @@ function AssistantText({ text, reduced }: { text: string; reduced: boolean | nul
 
 function StepItem({ item, reduced }: { item: DemoItem; reduced: boolean | null }) {
   const isDone = item.stepStatus === "done"
-
   return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={spring}
-      className="flex items-center gap-2 pl-8 text-xs text-muted-foreground"
-    >
+    <motion.div initial={reduced ? false : { opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={spring} className="flex items-center gap-2 pl-8 text-xs text-muted-foreground">
       {isDone ? (
-        <svg
-          className="w-3.5 h-3.5 text-[var(--success,#10b981)] shrink-0"
-          viewBox="0 0 16 16"
-          fill="none"
-          aria-hidden="true"
-        >
+        <svg className="w-3.5 h-3.5 text-[var(--success)] shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden>
           <circle cx="8" cy="8" r="8" fill="currentColor" opacity="0.15" />
-          <path
-            d="M5 8l2 2 4-4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : (
-        <svg
-          className="w-3.5 h-3.5 text-muted-foreground animate-spin shrink-0"
-          viewBox="0 0 16 16"
-          fill="none"
-          aria-hidden="true"
-        >
+        <svg className="w-3.5 h-3.5 text-muted-foreground animate-spin shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden>
           <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
-          <path
-            d="M14 8a6 6 0 00-6-6"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
+          <path d="M14 8a6 6 0 00-6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       )}
       <span>{item.content}</span>
-      {isDone && item.stepDuration && (
-        <span className="text-muted-foreground/50 tabular-nums">{item.stepDuration}</span>
-      )}
+      {isDone && item.stepDuration && <span className="text-muted-foreground/50 tabular-nums">{item.stepDuration}</span>}
     </motion.div>
   )
 }
 
-function ComponentItem({
-  componentType,
-  reduced,
-}: {
-  componentType: string
-  reduced: boolean | null
-}) {
+function ComponentItem({ componentType, reduced }: { componentType: string; reduced: boolean | null }) {
   const componentMap: Record<string, () => React.JSX.Element> = {
     weather: DemoWeatherCard,
     chart: DemoBarChart,
     stats: DemoStatsGrid,
   }
-
   const Component = componentMap[componentType]
   if (!Component) return null
-
   return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, y: 12, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ ...gentleSpring, delay: 0.05 }}
-      className="pl-8"
-    >
+    <motion.div initial={reduced ? false : { opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ ...gentleSpring, delay: 0.05 }} className="pl-8">
       <Component />
     </motion.div>
   )
 }
 
-function ElicitationItem({ item, reduced }: { item: DemoItem; reduced: boolean | null }) {
+function ChoiceElicitation({ item, reduced }: { item: DemoItem; reduced: boolean | null }) {
   return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={gentleSpring}
-      className="pl-8"
-    >
+    <motion.div initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={gentleSpring} className="pl-8">
       <p className="text-sm text-foreground mb-2">{item.content}</p>
-      <div className="flex gap-2" aria-hidden="true">
+      <div className="flex flex-wrap gap-2" aria-hidden>
         {item.options?.map((opt) => (
           <span
             key={opt}
-            tabIndex={-1}
-            className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground cursor-default select-none hover:bg-accent transition-colors"
+            className={`rounded-full border px-3 py-1 text-xs font-medium cursor-default select-none transition-colors ${
+              item.selectedOption === opt
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground hover:bg-accent"
+            }`}
           >
+            {item.selectedOption === opt && <PiCheckBold className="w-2.5 h-2.5 inline mr-1" />}
             {opt}
           </span>
         ))}
@@ -434,21 +416,30 @@ function ElicitationItem({ item, reduced }: { item: DemoItem; reduced: boolean |
   )
 }
 
+function ConfirmElicitation({ item, reduced }: { item: DemoItem; reduced: boolean | null }) {
+  return (
+    <motion.div initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={gentleSpring} className="pl-8">
+      <p className="text-sm text-foreground mb-2">{item.content}</p>
+      <div className="flex gap-2" aria-hidden>
+        <span className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium cursor-default">
+          {item.confirmLabels?.accept ?? "Confirm"}
+        </span>
+        <span className="rounded-lg border border-border text-foreground px-3 py-1.5 text-xs font-medium cursor-default">
+          {item.confirmLabels?.deny ?? "Cancel"}
+        </span>
+      </div>
+    </motion.div>
+  )
+}
+
 // ---------------------------------------------------------------------------
-// Visible items state — tracks what's rendered in the mock chat
+// Build visible items with coalescing logic
 // ---------------------------------------------------------------------------
 
-/**
- * Build the visible items list from the script based on the current step index.
- *
- * We apply coalescing logic:
- * - "typing" is removed once the next item arrives
- * - "skeleton" is removed once a "component" replaces it
- * - "step" running entries are replaced by their "done" counterpart
- */
 function buildVisibleItems(script: ScriptEntry[], stepIndex: number): DemoItem[] {
   const items: DemoItem[] = []
-  const stepsInProgress = new Map<string, number>() // content -> index in items array
+  const stepsInProgress = new Map<string, number>()
+  const elicitationsInProgress = new Map<string, number>()
 
   for (let i = 0; i <= stepIndex && i < script.length; i++) {
     const entry = script[i]
@@ -456,14 +447,13 @@ function buildVisibleItems(script: ScriptEntry[], stepIndex: number): DemoItem[]
     const item = entry.item
 
     // Remove typing indicator when anything new arrives
-    const lastItem = items[items.length - 1]
-    if (item.type !== "typing" && items.length > 0 && lastItem?.type === "typing") {
+    if (item.type !== "typing" && items.length > 0 && items[items.length - 1]?.type === "typing") {
       items.pop()
     }
 
-    // Remove skeleton when component arrives
-    const lastItemAfterTyping = items[items.length - 1]
-    if (item.type === "component" && items.length > 0 && lastItemAfterTyping?.type === "skeleton") {
+    // Remove skeleton when component/artifact arrives
+    if ((item.type === "component" || item.type === "artifact-html" || item.type === "artifact-code") &&
+        items.length > 0 && items[items.length - 1]?.type === "skeleton") {
       items.pop()
     }
 
@@ -480,6 +470,19 @@ function buildVisibleItems(script: ScriptEntry[], stepIndex: number): DemoItem[]
       }
     }
 
+    // Replace elicitation with selected version
+    if (item.type === "elicitation-choice" && item.content) {
+      const existingIdx = elicitationsInProgress.get(item.content)
+      if (existingIdx !== undefined && item.selectedOption) {
+        items[existingIdx] = item
+        elicitationsInProgress.delete(item.content)
+        continue
+      }
+      if (!item.selectedOption) {
+        elicitationsInProgress.set(item.content, items.length)
+      }
+    }
+
     items.push(item)
   }
 
@@ -487,7 +490,7 @@ function buildVisibleItems(script: ScriptEntry[], stepIndex: number): DemoItem[]
 }
 
 // ---------------------------------------------------------------------------
-// Main showcase component
+// Main showcase
 // ---------------------------------------------------------------------------
 
 export function DemoShowcase() {
@@ -500,52 +503,36 @@ export function DemoShowcase() {
   const [isPlaying, setIsPlaying] = useState(false)
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  // Calculate progress
-  const progress =
-    stepIndex < 0
-      ? 0
-      : Math.min(
-          100,
-          ((DEMO_SCRIPT[stepIndex]?.delay ?? TOTAL_DURATION) / TOTAL_DURATION) * 100,
-        )
+  const progress = stepIndex < 0
+    ? 0
+    : Math.min(100, ((DEMO_SCRIPT[stepIndex]?.delay ?? TOTAL_DURATION) / TOTAL_DURATION) * 100)
 
-  // Build the visible items from current step
   const visibleItems = stepIndex < 0 ? [] : buildVisibleItems(DEMO_SCRIPT, stepIndex)
 
-  // Cleanup timeouts
   const clearAllTimeouts = useCallback(() => {
     timeoutsRef.current.forEach(clearTimeout)
     timeoutsRef.current = []
   }, [])
 
-  // Start/restart the demo playback
   const startPlayback = useCallback(() => {
     clearAllTimeouts()
     setStepIndex(-1)
     setIsPlaying(true)
 
-    // Schedule each step
     DEMO_SCRIPT.forEach((entry, idx) => {
-      const t = setTimeout(() => {
-        setStepIndex(idx)
-      }, entry.delay)
+      const t = setTimeout(() => setStepIndex(idx), entry.delay)
       timeoutsRef.current.push(t)
     })
 
-    // Schedule restart
     const restartTimer = setTimeout(() => {
       setStepIndex(-1)
       setIsPlaying(false)
-      // Will re-trigger via the effect below
     }, TOTAL_DURATION + RESTART_PAUSE)
     timeoutsRef.current.push(restartTimer)
   }, [clearAllTimeouts])
 
-  // Start playing when in view
   useEffect(() => {
-    if (inView && !isPlaying) {
-      startPlayback()
-    }
+    if (inView && !isPlaying) startPlayback()
     if (!inView && isPlaying) {
       clearAllTimeouts()
       setIsPlaying(false)
@@ -553,35 +540,22 @@ export function DemoShowcase() {
     }
   }, [inView, isPlaying, startPlayback, clearAllTimeouts])
 
-  // Loop: when playback finishes (isPlaying goes false while still in view), restart
   useEffect(() => {
     if (inView && !isPlaying && stepIndex === -1) {
       const loopTimer = setTimeout(() => {
-        if (sectionRef.current) {
-          startPlayback()
-        }
+        if (sectionRef.current) startPlayback()
       }, 500)
       return () => clearTimeout(loopTimer)
     }
   }, [inView, isPlaying, stepIndex, startPlayback])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => clearAllTimeouts()
-  }, [clearAllTimeouts])
+  useEffect(() => () => clearAllTimeouts(), [clearAllTimeouts])
 
-  // Auto-scroll the messages container
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [visibleItems.length])
 
-  // For reduced motion: show all items instantly
-  const displayItems = reduced ? DEMO_SCRIPT.map((e) => e.item) : visibleItems
-
-  // Filter out intermediate items for reduced motion display
-  const reducedItems = reduced ? buildVisibleItems(DEMO_SCRIPT, DEMO_SCRIPT.length - 1) : displayItems
+  const displayItems = reduced ? buildVisibleItems(DEMO_SCRIPT, DEMO_SCRIPT.length - 1) : visibleItems
 
   return (
     <section
@@ -593,44 +567,45 @@ export function DemoShowcase() {
       <div className="text-center mb-10">
         <h2 className="text-2xl font-bold tracking-tight">See it in action</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          A live demo &mdash; no setup required.
+          Generative UI, elicitations, artifacts, and code diffs — all streaming.
         </p>
       </div>
 
       <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-lg mx-auto max-w-2xl">
-        {/* Mock header bar */}
+        {/* Header */}
         <div className="flex items-center gap-2 px-4 h-12 border-b border-border">
           <div className="h-6 w-6 rounded-lg bg-primary flex items-center justify-center">
             <PiFeatherDuotone className="w-3 h-3 text-primary-foreground" />
           </div>
           <span className="text-[13px] font-semibold">fabrik</span>
+          <div className="ml-auto flex gap-1.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+            <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+            <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+          </div>
         </div>
 
-        {/* Messages area */}
+        {/* Messages */}
         <div
           ref={scrollRef}
-          className="px-4 py-5 space-y-4 min-h-[400px] max-h-[500px] overflow-hidden scroll-smooth"
+          className="px-4 py-5 space-y-4 min-h-[420px] max-h-[520px] overflow-hidden scroll-smooth"
           aria-live="polite"
         >
           <AnimatePresence mode="popLayout">
-            {(reduced ? reducedItems : visibleItems).map((item, i) => (
-              <DemoMessage key={`${item.type}-${item.content ?? item.componentType ?? ""}-${i}`} item={item} reduced={reduced} />
+            {displayItems.map((item, i) => (
+              <DemoMessage key={`${item.type}-${item.content ?? item.componentType ?? item.artifactTitle ?? ""}-${i}`} item={item} reduced={reduced} />
             ))}
           </AnimatePresence>
         </div>
 
-        {/* Disabled input bar */}
+        {/* Input bar */}
         <div className="px-4 py-3 border-t border-border">
-          <div
-            className="rounded-2xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground"
-            aria-hidden="true"
-            tabIndex={-1}
-          >
+          <div className="rounded-2xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground" aria-hidden tabIndex={-1}>
             Message fabrik...
           </div>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress */}
         <div className="h-0.5 bg-border">
           <div
             className="h-full bg-primary transition-all duration-300 ease-out"

@@ -62,13 +62,18 @@ Store API keys in `.env.local` (never committed to git):
 ```bash title=".env.local"
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_AI_API_KEY=AI...
+GOOGLE_GENERATIVE_AI_API_KEY=AI...
 ```
 
 The provider adapters read these automatically:
 
 | Provider | Environment variable |
 |---|---|
+| **AI SDK (recommended)** | |
+| `@ai-sdk/openai` | `OPENAI_API_KEY` |
+| `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` |
+| `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` |
+| **Native adapters** | |
 | `@fabrik-sdk/ui/openai` | `OPENAI_API_KEY` |
 | `@fabrik-sdk/ui/anthropic` | `ANTHROPIC_API_KEY` |
 | `@fabrik-sdk/ui/google` | `GOOGLE_AI_API_KEY` |

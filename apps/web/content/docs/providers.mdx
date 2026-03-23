@@ -1,11 +1,89 @@
 ---
 title: Providers
-description: Connect to OpenAI, Anthropic, Google, or any LLM via adapters
+description: Connect to OpenAI, Anthropic, Google, or any LLM via AI SDK
 ---
 
 Providers are server-side adapters that translate between Fabrik's stream protocol and a specific LLM API. Each provider reads its API key from environment variables by default.
 
-## OpenAI
+## AI SDK (Recommended)
+
+The AI SDK adapter is the primary way to connect Fabrik to any LLM. It supports 53+ models through the unified AI SDK interface — OpenAI, Anthropic, Google, Groq, Mistral, Cohere, and more.
+
+```bash
+pnpm add @fabrik-sdk/ui ai @ai-sdk/google zod motion
+```
+
+### Google Gemini
+
+```ts title="app/api/chat/route.ts"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { google } from "@ai-sdk/google"
+
+export const POST = handler({
+  provider: aiSdk({ model: google("gemini-3-flash-preview") }),
+})
+```
+
+```bash title=".env.local"
+GOOGLE_GENERATIVE_AI_API_KEY=AI...
+```
+
+### OpenAI
+
+```bash
+pnpm add @ai-sdk/openai
+```
+
+```ts title="app/api/chat/route.ts"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { openai } from "@ai-sdk/openai"
+
+export const POST = handler({
+  provider: aiSdk({ model: openai("gpt-4o") }),
+})
+```
+
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+```
+
+### Anthropic
+
+```bash
+pnpm add @ai-sdk/anthropic
+```
+
+```ts title="app/api/chat/route.ts"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { anthropic } from "@ai-sdk/anthropic"
+
+export const POST = handler({
+  provider: aiSdk({ model: anthropic("claude-sonnet-4-20250514") }),
+})
+```
+
+```bash title=".env.local"
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### AI SDK environment variables
+
+| AI SDK package | Environment variable |
+|---|---|
+| `@ai-sdk/openai` | `OPENAI_API_KEY` |
+| `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` |
+| `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` |
+
+The AI SDK adapter wraps any AI SDK `LanguageModel`, giving you access to providers like Groq, Mistral, Cohere, and more. See the [AI SDK docs](https://sdk.vercel.ai/providers) for the full list of supported providers.
+
+## Lightweight Alternatives
+
+Fabrik also ships native adapters that talk directly to each LLM API without the AI SDK dependency. These are useful when you want a minimal dependency footprint.
+
+### OpenAI (native)
 
 ```ts title="app/api/chat/route.ts"
 import { openai } from "@fabrik-sdk/ui/openai"
@@ -20,7 +98,7 @@ export const POST = handler({
 OPENAI_API_KEY=sk-...
 ```
 
-### Options
+#### Options
 
 | Option | Type | Default |
 |---|---|---|
@@ -28,7 +106,7 @@ OPENAI_API_KEY=sk-...
 | `apiKey` | `string` | `process.env.OPENAI_API_KEY` |
 | `baseUrl` | `string` | OpenAI default |
 
-## Anthropic
+### Anthropic (native)
 
 ```ts title="app/api/chat/route.ts"
 import { anthropic } from "@fabrik-sdk/ui/anthropic"
@@ -43,14 +121,14 @@ export const POST = handler({
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Options
+#### Options
 
 | Option | Type | Default |
 |---|---|---|
 | `model` | `string` | `"claude-sonnet-4-20250514"` |
 | `apiKey` | `string` | `process.env.ANTHROPIC_API_KEY` |
 
-## Google Gemini
+### Google Gemini (native)
 
 ```ts title="app/api/chat/route.ts"
 import { google } from "@fabrik-sdk/ui/google"
@@ -65,28 +143,12 @@ export const POST = handler({
 GOOGLE_AI_API_KEY=AI...
 ```
 
-### Options
+#### Options
 
 | Option | Type | Default |
 |---|---|---|
 | `model` | `string` | `"gemini-2.0-flash"` |
 | `apiKey` | `string` | `process.env.GOOGLE_AI_API_KEY` |
-
-## Vercel AI SDK
-
-Use any of the 53+ models supported by the AI SDK:
-
-```ts title="app/api/chat/route.ts"
-import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
-import { handler } from "@fabrik-sdk/ui/server"
-import { openai } from "@ai-sdk/openai"
-
-export const POST = handler({
-  provider: aiSdk({ model: openai("gpt-4o") }),
-})
-```
-
-This adapter wraps any AI SDK `LanguageModel`, giving you access to providers like Groq, Mistral, Cohere, and more.
 
 ## Custom provider
 
@@ -114,6 +176,7 @@ A provider must yield `StreamEvent` objects. At minimum: `start`, then content e
 On the client, use the `server()` adapter to connect to your API route:
 
 ```tsx title="app/page.tsx"
+import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
 import { server } from "@fabrik-sdk/ui/server"
 
 const provider = server({ url: "/api/chat" })

@@ -157,11 +157,12 @@ import { FabrikPages, defineRoute } from "@fabrik-sdk/ui/react"
 Creates a Next.js API route handler.
 
 ```ts title="app/api/chat/route.ts"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
 import { handler } from "@fabrik-sdk/ui/server"
-import { openai } from "@fabrik-sdk/ui/openai"
+import { google } from "@ai-sdk/google"
 
 export const POST = handler({
-  provider: openai({ model: "gpt-4o" }),
+  provider: aiSdk({ model: google("gemini-3-flash-preview") }),
 })
 ```
 

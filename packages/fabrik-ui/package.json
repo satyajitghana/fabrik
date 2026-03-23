@@ -1,9 +1,12 @@
 {
   "name": "@fabrik-sdk/ui",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "private": false,
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -48,6 +51,11 @@
       "import": "./dist/adapters/ai-sdk.js",
       "require": "./dist/adapters/ai-sdk.cjs"
     },
+    "./agui": {
+      "types": "./dist/adapters/agui.d.ts",
+      "import": "./dist/adapters/agui.js",
+      "require": "./dist/adapters/agui.cjs"
+    },
     "./server": {
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js",
@@ -73,17 +81,26 @@
       "import": "./dist/chat/index.js",
       "require": "./dist/chat/index.cjs"
     },
+    "./lang": {
+      "types": "./dist/lang/index.d.ts",
+      "import": "./dist/lang/index.js",
+      "require": "./dist/lang/index.cjs"
+    },
     "./styles.css": "./dist/styles.css",
     "./themes/neutral.css": "./dist/themes/neutral.css",
     "./themes/blue.css": "./dist/themes/blue.css"
   },
   "peerDependencies": {
+    "ai": "^4.0.0 || ^5.0.0 || ^6.0.0",
     "motion": "^11.0.0 || ^12.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    },
     "openai": {
       "optional": true
     },
@@ -107,6 +124,7 @@
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@workspace/typescript-config": "workspace:*",
+    "ai": "^6.0.134",
     "motion": "^12.38.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

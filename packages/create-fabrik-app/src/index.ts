@@ -538,77 +538,55 @@ GOOGLE_GENERATIVE_AI_API_KEY=...
 
 function generateApiRoute(provider: Provider): string {
   if (provider === "openai") {
-    return `import { openai } from "@ai-sdk/openai"
-import { streamText } from "ai"
+    return `import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { openai } from "@ai-sdk/openai"
 
-export const runtime = "edge"
-
-export async function POST(req: Request) {
-  const { messages } = await req.json()
-
-  const result = streamText({
-    model: openai("gpt-4o"),
-    messages,
-  })
-
-  return result.toDataStreamResponse()
-}
+export const POST = handler({
+  provider: aiSdk({ model: openai("gpt-4o") })
+})
 `
   }
 
   if (provider === "anthropic") {
-    return `import { anthropic } from "@ai-sdk/anthropic"
-import { streamText } from "ai"
+    return `import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { anthropic } from "@ai-sdk/anthropic"
 
-export const runtime = "edge"
-
-export async function POST(req: Request) {
-  const { messages } = await req.json()
-
-  const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
-    messages,
-  })
-
-  return result.toDataStreamResponse()
-}
+export const POST = handler({
+  provider: aiSdk({ model: anthropic("claude-sonnet-4-20250514") })
+})
 `
   }
 
   if (provider === "google") {
-    return `import { google } from "@ai-sdk/google"
-import { streamText } from "ai"
+    return `import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
+import { google } from "@ai-sdk/google"
 
-export const runtime = "edge"
-
-export async function POST(req: Request) {
-  const { messages } = await req.json()
-
-  const result = streamText({
-    model: google("gemini-2.0-flash"),
-    messages,
-  })
-
-  return result.toDataStreamResponse()
-}
+export const POST = handler({
+  provider: aiSdk({ model: google("gemini-3-flash-preview") })
+})
 `
   }
 
-  return `import { streamText } from "ai"
+  return `import { handler } from "@fabrik-sdk/ui/server"
 
-export const runtime = "edge"
+// TODO: Configure your LLM provider
+// import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+// import { openai } from "@ai-sdk/openai"
+//
+// export const POST = handler({
+//   provider: aiSdk({ model: openai("gpt-4o") })
+// })
 
-export async function POST(req: Request) {
-  const { messages } = await req.json()
-
-  // TODO: Configure your LLM provider
-  // import { openai } from "@ai-sdk/openai"
-  // const result = streamText({ model: openai("gpt-4o"), messages })
-
-  return new Response("Configure an LLM provider in src/app/api/chat/route.ts", {
-    status: 501,
-  })
-}
+export const POST = handler({
+  provider: {
+    chat: async function* () {
+      yield { type: "text", content: "Configure an LLM provider in src/app/api/chat/route.ts" }
+    }
+  }
+})
 `
 }
 

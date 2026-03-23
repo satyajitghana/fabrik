@@ -29,8 +29,8 @@ See `.impeccable.md` for the full Design Context. Key points:
 ```
 Client (browser)                    Server (API route)
 ─────────────────                   ──────────────────
-server({ url: "/api/chat" })  →→→   handler({ provider: openai({ model: "gpt-4o" }) })
-    ↓ SSE stream                         ↓ reads OPENAI_API_KEY from env
+server({ url: "/api/chat" })  →→→   handler({ provider: aiSdk({ model: google("gemini-3-flash-preview") }) })
+    ↓ SSE stream                         ↓ AI SDK reads GOOGLE_GENERATIVE_AI_API_KEY from env
 <Fabrik provider={...}>                  ↓ streams to LLM
   <Chat />                               ↓ yields StreamEvents
 </Fabrik>                           ←←←  SSE response
@@ -44,9 +44,15 @@ import { Fabrik, Chat, useChat, Message } from "@fabrik-sdk/ui/react"
 import { server } from "@fabrik-sdk/ui/server"
 import { defineComponent } from "@fabrik-sdk/ui"
 
-// Server-side (API route)
+// Server-side — AI SDK adapter (primary, 53+ providers)
 import { handler } from "@fabrik-sdk/ui/server"
-import { openai } from "@fabrik-sdk/ui/openai"       // reads OPENAI_API_KEY
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { google } from "@ai-sdk/google"               // reads GOOGLE_GENERATIVE_AI_API_KEY
+import { openai } from "@ai-sdk/openai"               // reads OPENAI_API_KEY
+import { anthropic } from "@ai-sdk/anthropic"          // reads ANTHROPIC_API_KEY
+
+// Server-side — native adapters (alternative)
+import { openai } from "@fabrik-sdk/ui/openai"         // reads OPENAI_API_KEY
 import { anthropic } from "@fabrik-sdk/ui/anthropic"   // reads ANTHROPIC_API_KEY
 import { google } from "@fabrik-sdk/ui/google"         // reads GOOGLE_AI_API_KEY
 ```

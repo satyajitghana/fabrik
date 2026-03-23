@@ -17,6 +17,7 @@ export type {
   ImagePart,
   AskPart,
   ArtifactPart,
+  UiPart,
   PartStatus,
   StepStatus,
   ThreadStatus,

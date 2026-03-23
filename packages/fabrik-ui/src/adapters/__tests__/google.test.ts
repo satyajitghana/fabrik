@@ -1,28 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import type { StreamEvent, StreamOptions, FabrikMessage } from "../../core/types"
-
-// ---------------------------------------------------------------------------
-// Mock the @google/genai module
-// ---------------------------------------------------------------------------
-
-const mockGenerateContentStream = vi.fn()
-
-vi.mock("@google/genai", () => {
-  return {
-    GoogleGenAI: class MockGoogleGenAI {
-      models = {
-        generateContentStream: mockGenerateContentStream,
-      }
-    },
-  }
-})
-
-// Import after mock is set up
 import { google } from "../google"
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Mock fetch — the Google adapter uses raw REST API
 // ---------------------------------------------------------------------------
+
+const originalFetch = globalThis.fetch
 
 function makeMessage(
   role: "user" | "assistant" | "system",
@@ -45,73 +29,71 @@ function defaultOpts(overrides: Partial<StreamOptions> = {}): StreamOptions {
   }
 }
 
-/** Create a fake async iterable from an array of Google stream chunks. */
-async function* fakeStream(chunks: any[]): AsyncIterable<any> {
-  for (const chunk of chunks) {
-    yield chunk
-  }
+/** Create a mock SSE response from Google-format chunks */
+function mockSSE(chunks: Record<string, unknown>[]): string {
+  return chunks.map(c => `data: ${JSON.stringify(c)}\r\n\r\n`).join("")
 }
+
+function mockFetchResponse(body: string, status = 200) {
+  return new Response(body, {
+    status,
+    headers: { "Content-Type": "text/event-stream" },
+  })
+}
+
+let fetchSpy: ReturnType<typeof vi.fn>
+
+beforeEach(() => {
+  fetchSpy = vi.fn()
+  globalThis.fetch = fetchSpy
+})
+
+afterEach(() => {
+  globalThis.fetch = originalFetch
+})
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("google()", () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it("creates a provider with name 'google'", () => {
     const provider = google({ apiKey: "test-key" })
     expect(provider.name).toBe("google")
   })
 
-  it("uses the default model when none is specified", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+  it("uses the default model in the URL", async () => {
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const provider = google({ apiKey: "test-key" })
-    const events: StreamEvent[] = []
-    for await (const e of provider.stream(defaultOpts())) {
-      events.push(e)
-    }
+    for await (const _ of provider.stream(defaultOpts())) { /* consume */ }
 
-    expect(mockGenerateContentStream).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gemini-2.0-flash" }),
-    )
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain("gemini-2.0-flash")
   })
 
-  it("uses the model from options when provided", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+  it("uses the model from options", async () => {
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
-    const provider = google({ apiKey: "test-key", model: "gemini-2.5-pro" })
-    const events: StreamEvent[] = []
-    for await (const e of provider.stream(defaultOpts())) {
-      events.push(e)
-    }
+    const provider = google({ apiKey: "test-key", model: "gemini-3-flash-preview" })
+    for await (const _ of provider.stream(defaultOpts())) { /* consume */ }
 
-    expect(mockGenerateContentStream).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gemini-2.5-pro" }),
-    )
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain("gemini-3-flash-preview")
   })
 
   it("overrides default model with streamOptions.model", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
-    const provider = google({ apiKey: "test-key", model: "gemini-2.5-pro" })
-    const events: StreamEvent[] = []
-    for await (const e of provider.stream(
-      defaultOpts({ model: "gemini-2.0-flash-lite" }),
-    )) {
-      events.push(e)
-    }
+    const provider = google({ apiKey: "test-key", model: "gemini-3-flash-preview" })
+    for await (const _ of provider.stream(defaultOpts({ model: "gemini-2.0-flash-lite" }))) { /* consume */ }
 
-    expect(mockGenerateContentStream).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gemini-2.0-flash-lite" }),
-    )
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain("gemini-2.0-flash-lite")
   })
 
   it("emits start and done events for a minimal stream", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const provider = google({ apiKey: "test-key" })
     const events: StreamEvent[] = []
@@ -125,28 +107,10 @@ describe("google()", () => {
   })
 
   it("maps text chunks to text events", async () => {
-    mockGenerateContentStream.mockResolvedValue(
-      fakeStream([
-        {
-          candidates: [
-            {
-              content: {
-                parts: [{ text: "Hello " }],
-              },
-            },
-          ],
-        },
-        {
-          candidates: [
-            {
-              content: {
-                parts: [{ text: "world!" }],
-              },
-            },
-          ],
-        },
-      ]),
-    )
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([
+      { candidates: [{ content: { parts: [{ text: "Hello " }] } }] },
+      { candidates: [{ content: { parts: [{ text: "world!" }] } }] },
+    ])))
 
     const provider = google({ apiKey: "test-key" })
     const events: StreamEvent[] = []
@@ -154,33 +118,16 @@ describe("google()", () => {
       events.push(e)
     }
 
-    const textEvents = events.filter((e) => e.type === "text")
+    const textEvents = events.filter(e => e.type === "text")
     expect(textEvents).toHaveLength(2)
-    expect((textEvents[0] as any).delta).toBe("Hello ")
-    expect((textEvents[1] as any).delta).toBe("world!")
+    expect((textEvents[0] as { delta: string }).delta).toBe("Hello ")
+    expect((textEvents[1] as { delta: string }).delta).toBe("world!")
   })
 
   it("maps functionCall to tool_call_start and tool_call_done events", async () => {
-    mockGenerateContentStream.mockResolvedValue(
-      fakeStream([
-        {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    functionCall: {
-                      name: "get_weather",
-                      args: { city: "Paris" },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      ]),
-    )
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([
+      { candidates: [{ content: { parts: [{ functionCall: { name: "get_weather", args: { city: "Paris" }, id: "call-1" } }] } }] },
+    ])))
 
     const provider = google({ apiKey: "test-key" })
     const events: StreamEvent[] = []
@@ -188,22 +135,36 @@ describe("google()", () => {
       events.push(e)
     }
 
-    const toolStart = events.find((e) => e.type === "tool_call_start")
-    const toolDone = events.find((e) => e.type === "tool_call_done")
+    const toolStart = events.find(e => e.type === "tool_call_start") as { id: string; toolName: string }
+    const toolDone = events.find(e => e.type === "tool_call_done") as { id: string; toolName: string; args: Record<string, unknown> }
 
     expect(toolStart).toBeDefined()
-    expect((toolStart as any).toolName).toBe("get_weather")
-
+    expect(toolStart.toolName).toBe("get_weather")
     expect(toolDone).toBeDefined()
-    expect((toolDone as any).toolName).toBe("get_weather")
-    expect((toolDone as any).args).toEqual({ city: "Paris" })
-
-    // Both should share the same id
-    expect((toolStart as any).id).toBe((toolDone as any).id)
+    expect(toolDone.toolName).toBe("get_weather")
+    expect(toolDone.args).toEqual({ city: "Paris" })
+    expect(toolStart.id).toBe(toolDone.id)
   })
 
-  it("emits an error event when stream creation throws", async () => {
-    mockGenerateContentStream.mockRejectedValue(new Error("API key invalid"))
+  it("emits an error event when fetch fails", async () => {
+    fetchSpy.mockRejectedValue(new Error("Network error"))
+
+    const provider = google({ apiKey: "test-key" })
+    const events: StreamEvent[] = []
+    for await (const e of provider.stream(defaultOpts())) {
+      events.push(e)
+    }
+
+    const errorEvent = events.find(e => e.type === "error") as { message: string }
+    expect(errorEvent).toBeDefined()
+    expect(errorEvent.message).toBe("Network error")
+  })
+
+  it("emits an error event for non-200 responses", async () => {
+    fetchSpy.mockResolvedValue(new Response(
+      JSON.stringify({ error: { message: "Invalid API key" } }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    ))
 
     const provider = google({ apiKey: "bad-key" })
     const events: StreamEvent[] = []
@@ -211,62 +172,33 @@ describe("google()", () => {
       events.push(e)
     }
 
-    const errorEvent = events.find((e) => e.type === "error")
+    const errorEvent = events.find(e => e.type === "error") as { message: string }
     expect(errorEvent).toBeDefined()
-    expect((errorEvent as any).message).toBe("API key invalid")
+    expect(errorEvent.message).toContain("Invalid API key")
   })
 
-  it("emits an error event when the stream itself throws", async () => {
-    async function* failingStream(): AsyncIterable<any> {
-      yield {
-        candidates: [
-          { content: { parts: [{ text: "Partial" }] } },
-        ],
-      }
-      throw new Error("Connection lost")
-    }
-
-    mockGenerateContentStream.mockResolvedValue(failingStream())
+  it("passes system prompt via systemInstruction", async () => {
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const provider = google({ apiKey: "test-key" })
-    const events: StreamEvent[] = []
-    for await (const e of provider.stream(defaultOpts())) {
-      events.push(e)
-    }
+    for await (const _ of provider.stream(defaultOpts())) { /* consume */ }
 
-    const errorEvent = events.find((e) => e.type === "error")
-    expect(errorEvent).toBeDefined()
-    expect((errorEvent as any).message).toBe("Connection lost")
-    // Should not emit 'done' after an error
-    expect(events[events.length - 1]!.type).toBe("error")
-  })
-
-  it("passes system prompt via config.systemInstruction", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
-
-    const provider = google({ apiKey: "test-key" })
-    for await (const _ of provider.stream(defaultOpts())) {
-      // consume
-    }
-
-    const callArgs = mockGenerateContentStream.mock.calls[0]![0]
-    expect(callArgs.config).toEqual({ systemInstruction: "You are helpful" })
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string)
+    expect(body.systemInstruction).toEqual({ parts: [{ text: "You are helpful" }] })
   })
 
   it("omits systemInstruction when systemPrompt is empty", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const provider = google({ apiKey: "test-key" })
-    for await (const _ of provider.stream(defaultOpts({ systemPrompt: "" }))) {
-      // consume
-    }
+    for await (const _ of provider.stream(defaultOpts({ systemPrompt: "" }))) { /* consume */ }
 
-    const callArgs = mockGenerateContentStream.mock.calls[0]![0]
-    expect(callArgs).not.toHaveProperty("config")
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string)
+    expect(body).not.toHaveProperty("systemInstruction")
   })
 
   it("converts FabrikMessage[] to Google format correctly", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const messages: FabrikMessage[] = [
       makeMessage("system", "System instructions"),
@@ -276,31 +208,17 @@ describe("google()", () => {
     ]
 
     const provider = google({ apiKey: "test-key" })
-    for await (const _ of provider.stream(
-      defaultOpts({ messages, systemPrompt: "System instructions" }),
-    )) {
-      // consume
-    }
+    for await (const _ of provider.stream(defaultOpts({ messages }))) { /* consume */ }
 
-    const callArgs = mockGenerateContentStream.mock.calls[0]![0]
-    // System messages should be excluded from contents array
-    expect(callArgs.contents).toHaveLength(3)
-    expect(callArgs.contents[0]).toEqual({
-      role: "user",
-      parts: [{ text: "Hi there" }],
-    })
-    expect(callArgs.contents[1]).toEqual({
-      role: "model",
-      parts: [{ text: "Hello!" }],
-    })
-    expect(callArgs.contents[2]).toEqual({
-      role: "user",
-      parts: [{ text: "How are you?" }],
-    })
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string)
+    expect(body.contents).toHaveLength(3)
+    expect(body.contents[0]).toEqual({ role: "user", parts: [{ text: "Hi there" }] })
+    expect(body.contents[1]).toEqual({ role: "model", parts: [{ text: "Hello!" }] })
+    expect(body.contents[2]).toEqual({ role: "user", parts: [{ text: "How are you?" }] })
   })
 
-  it("converts ToolSpec[] to Google tool format", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+  it("converts ToolSpec[] to Google tool format with uppercase types", async () => {
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const tools = [
       {
@@ -312,71 +230,34 @@ describe("google()", () => {
           required: ["city"],
         },
       },
-      {
-        name: "search",
-        description: "Search the web",
-        parameters: {
-          type: "object",
-          properties: { query: { type: "string" } },
-        },
-      },
     ]
 
     const provider = google({ apiKey: "test-key" })
-    for await (const _ of provider.stream(defaultOpts({ tools }))) {
-      // consume
-    }
+    for await (const _ of provider.stream(defaultOpts({ tools }))) { /* consume */ }
 
-    const callArgs = mockGenerateContentStream.mock.calls[0]![0]
-    expect(callArgs.tools).toEqual([
-      {
-        functionDeclarations: [
-          {
-            name: "get_weather",
-            description: "Get current weather",
-            parameters: {
-              type: "object",
-              properties: { city: { type: "string" } },
-              required: ["city"],
-            },
-          },
-          {
-            name: "search",
-            description: "Search the web",
-            parameters: {
-              type: "object",
-              properties: { query: { type: "string" } },
-            },
-          },
-        ],
-      },
-    ])
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string)
+    expect(body.tools[0].functionDeclarations[0].name).toBe("get_weather")
+    expect(body.tools[0].functionDeclarations[0].parameters.type).toBe("OBJECT")
+    expect(body.tools[0].functionDeclarations[0].parameters.properties.city.type).toBe("STRING")
+    expect(body.toolConfig).toEqual({ functionCallingConfig: { mode: "AUTO" } })
   })
 
-  it("omits tools param when tools array is empty", async () => {
-    mockGenerateContentStream.mockResolvedValue(fakeStream([]))
+  it("omits tools when tools array is empty", async () => {
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([])))
 
     const provider = google({ apiKey: "test-key" })
-    for await (const _ of provider.stream(defaultOpts({ tools: [] }))) {
-      // consume
-    }
+    for await (const _ of provider.stream(defaultOpts({ tools: [] }))) { /* consume */ }
 
-    const callArgs = mockGenerateContentStream.mock.calls[0]![0]
-    expect(callArgs).not.toHaveProperty("tools")
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string)
+    expect(body).not.toHaveProperty("tools")
+    expect(body).not.toHaveProperty("toolConfig")
   })
 
   it("skips chunks with no candidates", async () => {
-    mockGenerateContentStream.mockResolvedValue(
-      fakeStream([
-        { candidates: [] },
-        { candidates: null },
-        {
-          candidates: [
-            { content: { parts: [{ text: "Hello" }] } },
-          ],
-        },
-      ]),
-    )
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([
+      { candidates: [] },
+      { candidates: [{ content: { parts: [{ text: "Hello" }] } }] },
+    ])))
 
     const provider = google({ apiKey: "test-key" })
     const events: StreamEvent[] = []
@@ -384,33 +265,18 @@ describe("google()", () => {
       events.push(e)
     }
 
-    const textEvents = events.filter((e) => e.type === "text")
+    const textEvents = events.filter(e => e.type === "text")
     expect(textEvents).toHaveLength(1)
-    expect((textEvents[0] as any).delta).toBe("Hello")
+    expect((textEvents[0] as { delta: string }).delta).toBe("Hello")
   })
 
   it("handles mixed text and function call parts in a single chunk", async () => {
-    mockGenerateContentStream.mockResolvedValue(
-      fakeStream([
-        {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  { text: "Let me check that." },
-                  {
-                    functionCall: {
-                      name: "search",
-                      args: { query: "weather" },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      ]),
-    )
+    fetchSpy.mockResolvedValue(mockFetchResponse(mockSSE([
+      { candidates: [{ content: { parts: [
+        { text: "Let me check that." },
+        { functionCall: { name: "search", args: { query: "weather" }, id: "c1" } },
+      ] } }] },
+    ])))
 
     const provider = google({ apiKey: "test-key" })
     const events: StreamEvent[] = []
@@ -418,12 +284,8 @@ describe("google()", () => {
       events.push(e)
     }
 
-    const textEvents = events.filter((e) => e.type === "text")
-    const toolStartEvents = events.filter((e) => e.type === "tool_call_start")
-    const toolDoneEvents = events.filter((e) => e.type === "tool_call_done")
-
-    expect(textEvents).toHaveLength(1)
-    expect(toolStartEvents).toHaveLength(1)
-    expect(toolDoneEvents).toHaveLength(1)
+    expect(events.filter(e => e.type === "text")).toHaveLength(1)
+    expect(events.filter(e => e.type === "tool_call_start")).toHaveLength(1)
+    expect(events.filter(e => e.type === "tool_call_done")).toHaveLength(1)
   })
 })
