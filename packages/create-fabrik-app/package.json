@@ -1,8 +1,9 @@
 {
   "name": "create-fabrik-app",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "type": "module",
-  "bin": { "create-fabrik-app": "./dist/index.js" },
+  "files": ["dist", "README.md"],
+  "bin": { "create-fabrik-app": "dist/index.js" },
   "scripts": { "build": "tsup" },
   "dependencies": {
     "commander": "^13.1.0",

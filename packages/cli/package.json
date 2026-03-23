@@ -1,10 +1,11 @@
 {
-  "name": "@fabrik/cli",
-  "version": "0.0.1",
+  "name": "@fabrik-sdk/cli",
+  "version": "0.0.4",
   "type": "module",
-  "private": true,
+  "private": false,
+  "files": ["dist", "README.md"],
   "bin": {
-    "fabrik": "./dist/index.js"
+    "fabrik": "dist/index.js"
   },
   "scripts": {
     "build": "tsup",

@@ -1,8 +1,9 @@
 {
-  "name": "@fabrik/ui",
-  "version": "0.0.1",
+  "name": "@fabrik-sdk/ui",
+  "version": "0.0.4",
   "type": "module",
-  "private": true,
+  "private": false,
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
