@@ -1,6 +1,6 @@
 {
   "name": "create-fabrik-app",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "files": ["dist", "README.md"],
   "bin": { "create-fabrik-app": "dist/index.js" },
