@@ -78,14 +78,18 @@ GOOGLE_GENERATIVE_AI_API_KEY=...
 ## Features
 
 - **Generative UI** — LLM calls `show_weather_card()` and your React component renders
-- **Any LLM** — OpenAI, Anthropic, Google, Mistral, Groq — 53+ providers
+- **Lang DSL** — LLMs render charts, tables, and buttons using a lightweight markup — no JSON schemas needed
+- **FabrikPages** — Route-based AI page rendering with caching and navigation
+- **Agent Registry** — Multi-agent orchestration with per-agent tools, components, and system prompts
+- **AG-UI Protocol** — Connect to any AG-UI compatible agent (LangGraph, CrewAI, Mastra, CopilotKit)
+- **Any LLM** — OpenAI, Anthropic, Google, Mistral, Groq — 53+ providers via AI SDK
 - **Streaming** — Text and components stream in progressively
 - **Thinking Steps** — Animated tool progress (Searching API... 0.6s)
 - **Elicitation** — AI asks follow-up questions: choice pills, confirmations, text inputs, permissions
 - **Artifacts** — HTML in sandboxed iframes, code with Shiki syntax highlighting
 - **Code Diffs** — GitHub-style unified diffs with accept/reject
 - **55 shadcn components** — Full UI library included
-- **Charts** — Recharts with teal palette
+- **Charts** — Bar, line, and pie charts via Lang DSL
 - **File attachments** — Image preview thumbnails, drag & drop
 - **Markdown** — Bold, italic, code, links in messages
 - **Spring animations** — Motion library with spring physics
@@ -139,6 +143,17 @@ const provider = server({ url: "/api/chat" })
 | `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-flash-preview` |
 
 Plus 53+ additional providers — Mistral, Groq, Cohere, Perplexity, and more — via [`ai`](https://sdk.vercel.ai/providers).
+
+### AG-UI Protocol
+
+Connect to any [AG-UI](https://docs.ag-ui.com/) compatible agent — LangGraph, CrewAI, Mastra, and more:
+
+```typescript
+import { agui } from "@fabrik-sdk/ui/agui"
+import { handler } from "@fabrik-sdk/ui/server"
+
+export const POST = handler({ provider: agui({ url: "http://localhost:8000/agent/run" }) })
+```
 
 ### Advanced: custom provider
 
@@ -213,6 +228,52 @@ export const barChart = defineComponent({
 
 The AI sees the schema, decides when to render it, and calls it with the right props.
 
+### Lang DSL
+
+The Lang DSL lets LLMs render rich UI — charts, tables, buttons — using a lightweight markup language instead of JSON tool calls. It streams and auto-closes incomplete tags.
+
+```
+<BarChart title="Usage" xLabel="Framework">
+  <Series category="Downloads" values="68,28,20" labels="React,Vue,Svelte" />
+</BarChart>
+```
+
+Built-in components: `BarChart`, `LineChart`, `PieChart`, `Table`, `Button`.
+
+```tsx
+import { FabrikLangRenderer } from "@fabrik-sdk/ui/lang"
+
+<FabrikLangRenderer text={message.content} />
+```
+
+### FabrikPages
+
+Route-based AI page rendering with caching and navigation:
+
+```tsx
+import { FabrikPages, defineRoute } from "@fabrik-sdk/ui/pages"
+
+const routes = [
+  defineRoute({ path: "/", prompt: "Show the store homepage", title: "Home" }),
+  defineRoute({ path: "/products/:id", prompt: "Show product {id}", title: "Product" }),
+]
+
+<FabrikPages routes={routes} provider={provider} />
+```
+
+### Agent Registry
+
+Orchestrate multiple agents with different providers, tools, and system prompts:
+
+```typescript
+import { AgentRegistry } from "@fabrik-sdk/ui"
+
+const registry = new AgentRegistry()
+registry.register({ id: "search", name: "Search Agent", provider: searchProvider, tools: [webSearch] })
+registry.register({ id: "code", name: "Code Agent", provider: codeProvider, tools: [runCode] })
+registry.setDefault("search")
+```
+
 ## Examples
 
 | Example | Port | Description |
@@ -246,11 +307,13 @@ The AI SDK adapter (`aiSdk()`) is the recommended way to connect to any LLM. It 
 ```
 packages/
 ├── fabrik-ui/          # SDK — "@fabrik-sdk/ui"
-│   ├── src/core/       # Client, stream, reducer, registry, types
+│   ├── src/core/       # Client, stream, reducer, agent registry, types
 │   ├── src/react/      # <Fabrik>, useChat(), <Message>, <Chat>, <Fab>
 │   ├── src/chat/       # Elicitations, artifacts, code diffs, input
-│   ├── src/adapters/   # AI SDK (primary), OpenAI, Anthropic, Google, custom
+│   ├── src/adapters/   # AI SDK, OpenAI, Anthropic, Google, AG-UI, custom
 │   ├── src/server/     # handler(), server() adapter
+│   ├── src/lang/       # Lang DSL — parser, renderer, charts, tables
+│   ├── src/pages/      # FabrikPages — route-based AI page rendering
 │   └── src/themes/     # CSS variable presets
 ├── ui/                 # 55 shadcn components
 └── cli/                # fabrik init, fabrik add
