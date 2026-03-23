@@ -12,13 +12,13 @@
  * automatically by the adapter on the server side.
  */
 
-import { Fabrik, useChat, Message } from "@fabrik/ui/react"
-import { server } from "@fabrik/ui/server"
+import { Fabrik, useChat, Message } from "@fabrik-sdk/ui/react"
+import { server } from "@fabrik-sdk/ui/server"
 import { demoLibrary } from "@/components/fabrik-components"
 import { useRef, useEffect } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import type { FabrikMessage, TextPart, ComponentPart, ThinkingPart, StepPart, AskPart, ArtifactPart, TextAsk, PermissionAsk } from "@fabrik/ui"
-import { ArtifactPanel, ConfirmDialog, ChoicePicker, TextInputDialog, PermissionDialog, InputArea } from "@fabrik/ui/react"
+import type { FabrikMessage, TextPart, ComponentPart, ThinkingPart, StepPart, AskPart, ArtifactPart, TextAsk, PermissionAsk } from "@fabrik-sdk/ui"
+import { ArtifactPanel, ConfirmDialog, ChoicePicker, TextInputDialog, PermissionDialog, InputArea } from "@fabrik-sdk/ui/react"
 import { PiFeatherDuotone, PiSpinnerGapBold, PiCheckBold, PiXBold, PiCaretRightBold, PiCloudSunFill, PiChartBarFill, PiSquaresFourFill, PiTableFill, PiBrainFill, PiWarningCircleFill, PiListChecksFill, PiCursorTextFill, PiShieldCheckFill, PiCodeFill, PiBrowserFill, PiGitDiffFill, PiEnvelopeFill, PiChartLineFill } from "react-icons/pi"
 
 const spring = { type: "spring" as const, damping: 30, stiffness: 300 }

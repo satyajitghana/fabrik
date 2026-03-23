@@ -40,15 +40,15 @@ server({ url: "/api/chat" })  →→→   handler({ provider: openai({ model: "g
 
 ```typescript
 // Client-side
-import { Fabrik, Chat, useChat, Message } from "@fabrik/ui/react"
-import { server } from "@fabrik/ui/server"
-import { defineComponent } from "@fabrik/ui"
+import { Fabrik, Chat, useChat, Message } from "@fabrik-sdk/ui/react"
+import { server } from "@fabrik-sdk/ui/server"
+import { defineComponent } from "@fabrik-sdk/ui"
 
 // Server-side (API route)
-import { handler } from "@fabrik/ui/server"
-import { openai } from "@fabrik/ui/openai"       // reads OPENAI_API_KEY
-import { anthropic } from "@fabrik/ui/anthropic"   // reads ANTHROPIC_API_KEY
-import { google } from "@fabrik/ui/google"         // reads GOOGLE_AI_API_KEY
+import { handler } from "@fabrik-sdk/ui/server"
+import { openai } from "@fabrik-sdk/ui/openai"       // reads OPENAI_API_KEY
+import { anthropic } from "@fabrik-sdk/ui/anthropic"   // reads ANTHROPIC_API_KEY
+import { google } from "@fabrik-sdk/ui/google"         // reads GOOGLE_AI_API_KEY
 ```
 
 ## Project Structure
@@ -102,6 +102,6 @@ npx playwright test examples/next-chat/  # One example
 ## Building
 
 ```bash
-npx turbo build --filter=@fabrik/ui   # Build SDK
+npx turbo build --filter=@fabrik-sdk/ui   # Build SDK
 pnpm run dev                           # Start all examples + website
 ```

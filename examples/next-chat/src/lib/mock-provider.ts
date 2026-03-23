@@ -1,4 +1,4 @@
-import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik/ui"
+import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik-sdk/ui"
 
 interface OpenMeteoCurrentWeather {
   temperature_2m: number
@@ -323,7 +323,7 @@ async function* artifactCodeResponse(): AsyncIterable<StreamEvent> {
   yield* streamText("Here's a TypeScript code artifact:\n\n")
   await delay(200)
 
-  const tsContent = `import { createMockProvider } from "@fabrik/ui"
+  const tsContent = `import { createMockProvider } from "@fabrik-sdk/ui"
 
 interface User {
   id: string

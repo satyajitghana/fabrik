@@ -107,7 +107,7 @@ If you build custom UI, use the `respond` function from `useChat`:
 
 ```tsx title="components/custom-elicitation.tsx"
 "use client"
-import { useChat } from "@fabrik/ui/react"
+import { useChat } from "@fabrik-sdk/ui/react"
 
 export function CustomElicitation({ askId }: { askId: string }) {
   const { respond } = useChat()
@@ -133,7 +133,7 @@ import type {
   TextAsk,
   PermissionAsk,
   AskOption,
-} from "@fabrik/ui"
+} from "@fabrik-sdk/ui"
 ```
 
 `AskConfig` is a discriminated union — switch on `config.type` to narrow the type.

@@ -15,7 +15,7 @@
  * - ... and 40+ more
  *
  * Usage:
- *   import { aiSdk } from "@fabrik/ui/ai-sdk"
+ *   import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
  *   import { openai } from "@ai-sdk/openai"
  *
  *   const provider = aiSdk({ model: openai("gpt-4o") })

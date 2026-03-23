@@ -8,8 +8,8 @@ Providers are server-side adapters that translate between Fabrik's stream protoc
 ## OpenAI
 
 ```ts title="app/api/chat/route.ts"
-import { openai } from "@fabrik/ui/openai"
-import { handler } from "@fabrik/ui/server"
+import { openai } from "@fabrik-sdk/ui/openai"
+import { handler } from "@fabrik-sdk/ui/server"
 
 export const POST = handler({
   provider: openai({ model: "gpt-4o" }),
@@ -31,8 +31,8 @@ OPENAI_API_KEY=sk-...
 ## Anthropic
 
 ```ts title="app/api/chat/route.ts"
-import { anthropic } from "@fabrik/ui/anthropic"
-import { handler } from "@fabrik/ui/server"
+import { anthropic } from "@fabrik-sdk/ui/anthropic"
+import { handler } from "@fabrik-sdk/ui/server"
 
 export const POST = handler({
   provider: anthropic({ model: "claude-sonnet-4-20250514" }),
@@ -53,8 +53,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 ## Google Gemini
 
 ```ts title="app/api/chat/route.ts"
-import { google } from "@fabrik/ui/google"
-import { handler } from "@fabrik/ui/server"
+import { google } from "@fabrik-sdk/ui/google"
+import { handler } from "@fabrik-sdk/ui/server"
 
 export const POST = handler({
   provider: google({ model: "gemini-2.0-flash" }),
@@ -77,8 +77,8 @@ GOOGLE_AI_API_KEY=AI...
 Use any of the 53+ models supported by the AI SDK:
 
 ```ts title="app/api/chat/route.ts"
-import { aiSdk } from "@fabrik/ui/ai-sdk"
-import { handler } from "@fabrik/ui/server"
+import { aiSdk } from "@fabrik-sdk/ui/ai-sdk"
+import { handler } from "@fabrik-sdk/ui/server"
 import { openai } from "@ai-sdk/openai"
 
 export const POST = handler({
@@ -93,7 +93,7 @@ This adapter wraps any AI SDK `LanguageModel`, giving you access to providers li
 Build your own provider by implementing the `Provider` interface:
 
 ```ts title="lib/my-provider.ts"
-import type { Provider, StreamOptions, StreamEvent } from "@fabrik/ui"
+import type { Provider, StreamOptions, StreamEvent } from "@fabrik-sdk/ui"
 
 export function myProvider(): Provider {
   return {
@@ -114,7 +114,7 @@ A provider must yield `StreamEvent` objects. At minimum: `start`, then content e
 On the client, use the `server()` adapter to connect to your API route:
 
 ```tsx title="app/page.tsx"
-import { server } from "@fabrik/ui/server"
+import { server } from "@fabrik-sdk/ui/server"
 
 const provider = server({ url: "/api/chat" })
 ```

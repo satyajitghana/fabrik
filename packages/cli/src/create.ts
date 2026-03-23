@@ -105,7 +105,7 @@ export async function create(
   // Write globals.css
   writeFileSync(
     join(projectDir, "src/app/globals.css"),
-    `@import "tailwindcss";\n@import "@fabrik/ui/styles.css";\n\n:root {\n  --background: #ffffff;\n  --foreground: #171717;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --background: #0a0a0a;\n    --foreground: #ededed;\n  }\n}\n\nbody {\n  color: var(--foreground);\n  background: var(--background);\n  font-family: system-ui, -apple-system, sans-serif;\n}\n`
+    `@import "tailwindcss";\n@import "@fabrik-sdk/ui/styles.css";\n\n:root {\n  --background: #ffffff;\n  --foreground: #171717;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --background: #0a0a0a;\n    --foreground: #ededed;\n  }\n}\n\nbody {\n  color: var(--foreground);\n  background: var(--background);\n  font-family: system-ui, -apple-system, sans-serif;\n}\n`
   )
   console.log(chalk.green("  +"), "src/app/globals.css")
 
@@ -160,7 +160,7 @@ function makePackageJson(name: string, provider: Provider): string {
     next: "^15.3.0",
     react: "^19.1.0",
     "react-dom": "^19.1.0",
-    "@fabrik/ui": "^0.0.1",
+    "@fabrik-sdk/ui": "^0.0.1",
     zod: "^3.24.0",
     motion: "^12.0.0",
     ai: "^4.3.0",
@@ -252,7 +252,7 @@ function makePage(template: Template): string {
   if (template === "minimal") {
     return `"use client"
 
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 export default function Home() {
   const chat = useChat({ api: "/api/chat" })
@@ -321,7 +321,7 @@ export default function Home() {
   if (template === "copilot") {
     return `"use client"
 
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 export default function Home() {
   const chat = useChat({ api: "/api/chat" })
@@ -381,7 +381,7 @@ export default function Home() {
   return `"use client"
 
 import { useState } from "react"
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 function ChatWidget() {
   const chat = useChat({ api: "/api/chat" })
@@ -543,7 +543,7 @@ export async function POST(req: Request) {
 function makeChatPanel(): string {
   return `"use client"
 
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 export function ChatPanel() {
   const chat = useChat({ api: "/api/chat" })

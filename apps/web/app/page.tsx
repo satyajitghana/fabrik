@@ -143,7 +143,7 @@ function Hero() {
 
 function InstallCommand() {
   const [copied, setCopied] = useState(false)
-  const cmd = "pnpm add @fabrik/ui zod motion"
+  const cmd = "pnpm add @fabrik-sdk/ui zod motion"
   const copy = () => { navigator.clipboard.writeText(cmd); setCopied(true); setTimeout(() => setCopied(false), 2000) }
 
   return (
@@ -157,8 +157,8 @@ function InstallCommand() {
   )
 }
 
-const EXAMPLE_CODE = `import { Fabrik, Chat } from "@fabrik/ui/react"
-import { openai } from "@fabrik/ui/openai"
+const EXAMPLE_CODE = `import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
+import { openai } from "@fabrik-sdk/ui/openai"
 
 export default function App() {
   return (

@@ -1,11 +1,11 @@
 "use client"
 
-import { Fabrik, useChat, Message } from "@fabrik/ui/react"
+import { Fabrik, useChat, Message } from "@fabrik-sdk/ui/react"
 import { createCopilotProvider } from "@/lib/mock-provider"
 import { demoLibrary } from "@/components/fabrik-components"
 import { useRef, useEffect, useState, useCallback } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import type { FabrikMessage, TextPart, ComponentPart, ThinkingPart, StepPart } from "@fabrik/ui"
+import type { FabrikMessage, TextPart, ComponentPart, ThinkingPart, StepPart } from "@fabrik-sdk/ui"
 import {
   PiFeatherDuotone,
   PiPaperPlaneRightFill,

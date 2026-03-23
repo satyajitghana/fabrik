@@ -1,4 +1,4 @@
-// Public API — import { defineComponent, defineTool, createLibrary } from "@fabrik/ui"
+// Public API — import { defineComponent, defineTool, createLibrary } from "@fabrik-sdk/ui"
 
 export { defineComponent, defineTool, createLibrary } from "./registry"
 export { FabrikClient } from "./client"

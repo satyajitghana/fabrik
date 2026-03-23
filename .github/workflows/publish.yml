@@ -1,0 +1,55 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# id-token: write is required for npm Trusted Publishers (OIDC).
+# No NPM_TOKEN secret needed — npm CLI automatically uses the OIDC
+# token to authenticate when a Trusted Publisher is configured on npmjs.com.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: |
+          pnpm --filter @fabrik-sdk/ui build
+          pnpm --filter @fabrik-sdk/cli build
+          pnpm --filter create-fabrik-app build
+
+      - name: Test
+        run: pnpm --filter @fabrik-sdk/ui test
+
+      - name: Publish @fabrik-sdk/ui
+        working-directory: packages/fabrik-ui
+        run: npm publish --provenance --access public
+
+      - name: Publish @fabrik-sdk/cli
+        working-directory: packages/cli
+        run: npm publish --provenance --access public
+
+      - name: Publish create-fabrik-app
+        working-directory: packages/create-fabrik-app
+        run: npm publish --provenance --access public

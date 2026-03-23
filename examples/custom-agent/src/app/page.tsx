@@ -1,10 +1,10 @@
 "use client"
 
-import { Fabrik, useChat } from "@fabrik/ui/react"
+import { Fabrik, useChat } from "@fabrik-sdk/ui/react"
 import { agentProvider } from "@/lib/agent-provider"
 import { useRef, useEffect } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import type { FabrikMessage, TextPart, StepPart } from "@fabrik/ui"
+import type { FabrikMessage, TextPart, StepPart } from "@fabrik-sdk/ui"
 import {
   PiFeatherDuotone,
   PiPaperPlaneRightFill,

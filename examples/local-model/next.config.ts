@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@fabrik/ui"],
+  transpilePackages: ["@fabrik-sdk/ui"],
 };
 
 export default nextConfig;

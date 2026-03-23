@@ -1,5 +1,5 @@
-import { custom, parseOpenAiStream } from "@fabrik/ui/custom"
-import type { StreamEvent } from "@fabrik/ui"
+import { custom, parseOpenAiStream } from "@fabrik-sdk/ui/custom"
+import type { StreamEvent } from "@fabrik-sdk/ui"
 
 /**
  * Provider that connects to Ollama's OpenAI-compatible API at localhost:11434.

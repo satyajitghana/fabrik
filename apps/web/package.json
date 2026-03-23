@@ -13,7 +13,7 @@
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
-    "@fabrik/ui": "workspace:^",
+    "@fabrik-sdk/ui": "workspace:^",
     "@number-flow/react": "^0.6.0",
     "@visx/curve": "4.0.1-alpha.0",
     "@visx/event": "4.0.1-alpha.0",

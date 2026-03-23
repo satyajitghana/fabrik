@@ -12,7 +12,7 @@ When the LLM produces an HTML artifact, Fabrik renders it inside a sandboxed ifr
 The `ArtifactPanel` component handles rendering:
 
 ```tsx
-import { ArtifactPanel } from "@fabrik/ui/react"
+import { ArtifactPanel } from "@fabrik-sdk/ui/react"
 ```
 
 ### Stream events
@@ -44,7 +44,7 @@ Code artifacts render with syntax highlighting powered by Shiki. Supported langu
 The `CodeDiff` component renders GitHub-style diffs with accept/reject actions:
 
 ```tsx
-import { CodeDiff } from "@fabrik/ui/react"
+import { CodeDiff } from "@fabrik-sdk/ui/react"
 ```
 
 ### Props
@@ -61,7 +61,7 @@ import { CodeDiff } from "@fabrik/ui/react"
 ### Example
 
 ```tsx title="components/code-review.tsx"
-import { CodeDiff } from "@fabrik/ui/react"
+import { CodeDiff } from "@fabrik-sdk/ui/react"
 
 export function CodeReview() {
   return (
@@ -80,7 +80,7 @@ export function CodeReview() {
 ## ArtifactPart type
 
 ```ts
-import type { ArtifactPart } from "@fabrik/ui"
+import type { ArtifactPart } from "@fabrik-sdk/ui"
 
 interface ArtifactPart {
   type: "artifact"

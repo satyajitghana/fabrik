@@ -12,8 +12,8 @@ interface HandlerRequestBody {
  *
  * @example
  * ```ts
- * import { openai } from "@fabrik/ui/openai"
- * import { handler } from "@fabrik/ui/server"
+ * import { openai } from "@fabrik-sdk/ui/openai"
+ * import { handler } from "@fabrik-sdk/ui/server"
  *
  * export const POST = handler({ provider: openai({ model: "gpt-4o" }) })
  * ```

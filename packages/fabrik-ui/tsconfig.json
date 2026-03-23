@@ -6,8 +6,8 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "@fabrik/ui": ["./src/core/index.ts"],
-      "@fabrik/ui/*": ["./src/*/index.ts"]
+      "@fabrik-sdk/ui": ["./src/core/index.ts"],
+      "@fabrik-sdk/ui/*": ["./src/*/index.ts"]
     }
   },
   "include": ["src"],

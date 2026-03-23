@@ -1,4 +1,4 @@
-// Public API — import { Fabrik, useChat, Message, Chat, ... } from "@fabrik/ui/react"
+// Public API — import { Fabrik, useChat, Message, Chat, ... } from "@fabrik-sdk/ui/react"
 
 export { Fabrik } from "./provider"
 export type { FabrikProps } from "./provider"

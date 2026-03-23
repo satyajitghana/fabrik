@@ -91,7 +91,7 @@ These events are used internally by the client and are not exposed to developers
 The full `StreamEvent` union type:
 
 ```ts
-import type { StreamEvent } from "@fabrik/ui"
+import type { StreamEvent } from "@fabrik-sdk/ui"
 ```
 
 This is a discriminated union — switch on `event.type` to narrow the type and get full type safety for each event's fields.
@@ -101,7 +101,7 @@ This is a discriminated union — switch on `event.type` to narrow the type and 
 If you build a custom provider, yield `StreamEvent` objects from an async generator:
 
 ```ts title="lib/custom-stream.ts"
-import type { Provider, StreamEvent, StreamOptions } from "@fabrik/ui"
+import type { Provider, StreamEvent, StreamOptions } from "@fabrik-sdk/ui"
 
 export function customProvider(): Provider {
   return {

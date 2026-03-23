@@ -1,4 +1,4 @@
-import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik/ui"
+import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik-sdk/ui"
 
 /**
  * Copilot-specific mock provider that responds to questions about the document content.

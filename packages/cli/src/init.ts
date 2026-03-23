@@ -60,8 +60,8 @@ export default config
   const cssPath = join(cwd, config.cssFile)
   if (existsSync(cssPath)) {
     let css = readFileSync(cssPath, "utf-8")
-    if (!css.includes("@fabrik/ui/styles.css")) {
-      css = `@import "@fabrik/ui/styles.css";\n${css}`
+    if (!css.includes("@fabrik-sdk/ui/styles.css")) {
+      css = `@import "@fabrik-sdk/ui/styles.css";\n${css}`
       writeFileSync(cssPath, css)
       console.log(chalk.green("  ✓"), `Added styles import to ${config.cssFile}`)
     }
@@ -88,7 +88,7 @@ export function cn(...inputs: ClassValue[]) {
 
   console.log(chalk.green("\n  ✓ fabrik-ui initialized!\n"))
   console.log("  Next steps:")
-  console.log(chalk.dim("    pnpm add @fabrik/ui zod motion"))
+  console.log(chalk.dim("    pnpm add @fabrik-sdk/ui zod motion"))
   console.log(chalk.dim("    fabrik add card code-block table\n"))
 }
 

@@ -3,14 +3,14 @@ title: API Reference
 description: Complete API reference for all Fabrik UI exports
 ---
 
-## Core (`@fabrik/ui`)
+## Core (`@fabrik-sdk/ui`)
 
 ### defineComponent
 
 Defines a React component the LLM can render.
 
 ```ts
-import { defineComponent } from "@fabrik/ui"
+import { defineComponent } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 const card = defineComponent({
@@ -37,7 +37,7 @@ const card = defineComponent({
 Defines a server-side tool the LLM can call.
 
 ```ts
-import { defineTool } from "@fabrik/ui"
+import { defineTool } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 const fetchWeather = defineTool({
@@ -67,7 +67,7 @@ const fetchWeather = defineTool({
 Groups component definitions with uniqueness validation.
 
 ```ts
-import { createLibrary } from "@fabrik/ui"
+import { createLibrary } from "@fabrik-sdk/ui"
 
 const components = createLibrary([weatherCard, stockChart])
 ```
@@ -77,7 +77,7 @@ const components = createLibrary([weatherCard, stockChart])
 The core engine. Used internally by `<Fabrik>` — you only need this for headless usage.
 
 ```ts
-import { FabrikClient } from "@fabrik/ui"
+import { FabrikClient } from "@fabrik-sdk/ui"
 
 const client = new FabrikClient({
   provider,
@@ -90,7 +90,7 @@ const client = new FabrikClient({
 })
 ```
 
-## React (`@fabrik/ui/react`)
+## React (`@fabrik-sdk/ui/react`)
 
 ### Fabrik
 
@@ -137,7 +137,7 @@ See the [Components](/docs/components) page for the full return type.
 Renders a single `FabrikMessage` with all its parts.
 
 ```tsx
-import { Message } from "@fabrik/ui/react"
+import { Message } from "@fabrik-sdk/ui/react"
 
 <Message message={msg} />
 ```
@@ -147,18 +147,18 @@ import { Message } from "@fabrik/ui/react"
 Multi-page AI routing. Each route has its own system prompt and components.
 
 ```tsx
-import { FabrikPages, defineRoute } from "@fabrik/ui/react"
+import { FabrikPages, defineRoute } from "@fabrik-sdk/ui/react"
 ```
 
-## Server (`@fabrik/ui/server`)
+## Server (`@fabrik-sdk/ui/server`)
 
 ### handler
 
 Creates a Next.js API route handler.
 
 ```ts title="app/api/chat/route.ts"
-import { handler } from "@fabrik/ui/server"
-import { openai } from "@fabrik/ui/openai"
+import { handler } from "@fabrik-sdk/ui/server"
+import { openai } from "@fabrik-sdk/ui/openai"
 
 export const POST = handler({
   provider: openai({ model: "gpt-4o" }),
@@ -170,14 +170,14 @@ export const POST = handler({
 Client-side adapter that connects to the handler route.
 
 ```ts
-import { server } from "@fabrik/ui/server"
+import { server } from "@fabrik-sdk/ui/server"
 
 const provider = server({ url: "/api/chat" })
 ```
 
 ## Types
 
-All types are exported from `@fabrik/ui`:
+All types are exported from `@fabrik-sdk/ui`:
 
 ```ts
 import type {
@@ -205,7 +205,7 @@ import type {
   MultiChoiceAsk,
   TextAsk,
   PermissionAsk,
-} from "@fabrik/ui"
+} from "@fabrik-sdk/ui"
 ```
 
 ### FabrikMessage

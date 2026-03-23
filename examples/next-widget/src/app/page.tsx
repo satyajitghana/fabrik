@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { Fabrik, Fab } from "@fabrik/ui/react"
+import { Fabrik, Fab } from "@fabrik-sdk/ui/react"
 import { createMockProvider } from "@/lib/mock-provider"
 import { motion, useInView, useReducedMotion } from "motion/react"
 import {

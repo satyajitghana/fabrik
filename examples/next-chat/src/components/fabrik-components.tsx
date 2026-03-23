@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { defineComponent } from "@fabrik/ui"
-import { CodeDiff } from "@fabrik/ui/chat"
+import { defineComponent } from "@fabrik-sdk/ui"
+import { CodeDiff } from "@fabrik-sdk/ui/chat"
 import { z } from "zod"
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell

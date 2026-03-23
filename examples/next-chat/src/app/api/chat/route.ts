@@ -1,4 +1,4 @@
-import { handler } from "@fabrik/ui/server"
+import { handler } from "@fabrik-sdk/ui/server"
 import { createMockProvider } from "@/lib/mock-provider"
 
 // ---------------------------------------------------------------------------

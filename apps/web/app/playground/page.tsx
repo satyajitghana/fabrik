@@ -1,12 +1,12 @@
 "use client"
 
-import { Fabrik, useChat, Message } from "@fabrik/ui/react"
+import { Fabrik, useChat, Message } from "@fabrik-sdk/ui/react"
 import { createPlaygroundProvider } from "./mock-provider"
 import { playgroundLibrary } from "./components"
 import { useRef, useEffect } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { PiFeatherDuotone, PiPaperPlaneRightFill, PiSpinnerGapBold, PiArrowLeftBold } from "react-icons/pi"
-import type { FabrikMessage, TextPart, ComponentPart, StepPart } from "@fabrik/ui"
+import type { FabrikMessage, TextPart, ComponentPart, StepPart } from "@fabrik-sdk/ui"
 
 const spring = { type: "spring" as const, damping: 30, stiffness: 300 }
 

@@ -1,5 +1,5 @@
-import { custom } from "@fabrik/ui/custom"
-import type { StreamEvent } from "@fabrik/ui"
+import { custom } from "@fabrik-sdk/ui/custom"
+import type { StreamEvent } from "@fabrik-sdk/ui"
 
 /**
  * A custom agent provider that simulates a multi-step reasoning process,

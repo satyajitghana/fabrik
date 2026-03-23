@@ -5,12 +5,12 @@
  * The actual React components must be provided by the consumer (from shadcn/ui or custom).
  *
  * Usage:
- *   import { chatSchemas, dashboardSchemas } from "@fabrik/ui/ui"
+ *   import { chatSchemas, dashboardSchemas } from "@fabrik-sdk/ui/ui"
  *   // Then wrap with your own React components:
  *   const myLibrary = chatSchemas.map(s => defineComponent({ ...s, component: MyComponent }))
  *
  * Or use the helper:
- *   import { createChatLibrary } from "@fabrik/ui/ui"
+ *   import { createChatLibrary } from "@fabrik-sdk/ui/ui"
  *   const library = createChatLibrary({ Card: MyCard, CodeBlock: MyCodeBlock, ... })
  */
 
@@ -250,7 +250,7 @@ type SchemaName = keyof typeof schemas
  *
  * @example
  * ```tsx
- * import { createComponentLibrary, chatSchemaNames } from "@fabrik/ui/ui"
+ * import { createComponentLibrary, chatSchemaNames } from "@fabrik-sdk/ui/ui"
  * import { Card, CodeBlock, ... } from "./my-components"
  *
  * const library = createComponentLibrary(chatSchemaNames, {

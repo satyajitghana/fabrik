@@ -1,6 +1,6 @@
 "use client"
 
-import { defineComponent } from "@fabrik/ui"
+import { defineComponent } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 // ---------------------------------------------------------------------------

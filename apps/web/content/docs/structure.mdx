@@ -27,18 +27,18 @@ Fabrik UI ships multiple entry points so you only import what you need:
 
 | Import path | Purpose | Environment |
 |---|---|---|
-| `@fabrik/ui` | `defineComponent`, `defineTool`, types | Both |
-| `@fabrik/ui/react` | `Fabrik`, `Chat`, `Fab`, `useChat`, `Message` | Client |
-| `@fabrik/ui/server` | `handler`, `server` adapter | Server + Client |
-| `@fabrik/ui/openai` | OpenAI provider | Server |
-| `@fabrik/ui/anthropic` | Anthropic provider | Server |
-| `@fabrik/ui/google` | Google Gemini provider | Server |
-| `@fabrik/ui/ai-sdk` | Vercel AI SDK adapter | Server |
-| `@fabrik/ui/custom` | Custom provider adapter | Server |
-| `@fabrik/ui/chat` | Chat UI primitives | Client |
-| `@fabrik/ui/pages` | Multi-page routing | Client |
-| `@fabrik/ui/testing` | Mock provider for tests | Both |
-| `@fabrik/ui/styles.css` | Base styles | Client |
+| `@fabrik-sdk/ui` | `defineComponent`, `defineTool`, types | Both |
+| `@fabrik-sdk/ui/react` | `Fabrik`, `Chat`, `Fab`, `useChat`, `Message` | Client |
+| `@fabrik-sdk/ui/server` | `handler`, `server` adapter | Server + Client |
+| `@fabrik-sdk/ui/openai` | OpenAI provider | Server |
+| `@fabrik-sdk/ui/anthropic` | Anthropic provider | Server |
+| `@fabrik-sdk/ui/google` | Google Gemini provider | Server |
+| `@fabrik-sdk/ui/ai-sdk` | Vercel AI SDK adapter | Server |
+| `@fabrik-sdk/ui/custom` | Custom provider adapter | Server |
+| `@fabrik-sdk/ui/chat` | Chat UI primitives | Client |
+| `@fabrik-sdk/ui/pages` | Multi-page routing | Client |
+| `@fabrik-sdk/ui/testing` | Mock provider for tests | Both |
+| `@fabrik-sdk/ui/styles.css` | Base styles | Client |
 
 ## Server / client split
 
@@ -54,7 +54,7 @@ This means API keys never reach the browser. The client only sees streamed event
 Components are defined with `defineComponent()` and passed to `<Fabrik>`:
 
 ```tsx title="components/weather-card.tsx"
-import { defineComponent } from "@fabrik/ui"
+import { defineComponent } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 export const weatherCard = defineComponent({

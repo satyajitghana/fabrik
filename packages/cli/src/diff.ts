@@ -131,7 +131,7 @@ function generateRegistrySource(name: string): string {
 
   return `"use client"
 
-import { defineComponent } from "@fabrik/ui"
+import { defineComponent } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 // TODO: Implement ${componentName} component

@@ -163,7 +163,7 @@ function generatePackageJson(name: string, provider: Provider): string {
     next: "^15.3.0",
     react: "^19.1.0",
     "react-dom": "^19.1.0",
-    "@fabrik/ui": "^0.0.1",
+    "@fabrik-sdk/ui": "^0.0.1",
     zod: "^3.24.0",
     motion: "^12.0.0",
   }
@@ -249,7 +249,7 @@ function generateTsConfig(): string {
 
 function generateGlobalsCss(): string {
   return `@import "tailwindcss";
-@import "@fabrik/ui/styles.css";
+@import "@fabrik-sdk/ui/styles.css";
 
 :root {
   --background: #ffffff;
@@ -298,7 +298,7 @@ function generatePage(template: Template): string {
   if (template === "minimal") {
     return `"use client"
 
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 export default function Home() {
   const chat = useChat({ api: "/api/chat" })
@@ -367,7 +367,7 @@ export default function Home() {
   if (template === "copilot") {
     return `"use client"
 
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 export default function Home() {
   const chat = useChat({ api: "/api/chat" })
@@ -434,7 +434,7 @@ export default function Home() {
   return `"use client"
 
 import { useState } from "react"
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 function ChatWidget() {
   const chat = useChat({ api: "/api/chat" })
@@ -615,7 +615,7 @@ export async function POST(req: Request) {
 function generateChatPanel(): string {
   return `"use client"
 
-import { Fabrik, useChat } from "@fabrik/ui"
+import { Fabrik, useChat } from "@fabrik-sdk/ui"
 
 export function ChatPanel() {
   const chat = useChat({ api: "/api/chat" })

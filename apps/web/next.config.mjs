@@ -4,7 +4,7 @@ const withMDX = createMDX()
 
 /** @type {import('next').NextConfig} */
 const config = {
-  transpilePackages: ["@workspace/ui", "@fabrik/ui"],
+  transpilePackages: ["@workspace/ui", "@fabrik-sdk/ui"],
 }
 
 export default withMDX(config)

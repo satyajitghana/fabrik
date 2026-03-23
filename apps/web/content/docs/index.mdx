@@ -26,8 +26,8 @@ Create two files to get a working generative UI chat:
 ### Server route
 
 ```ts title="app/api/chat/route.ts"
-import { openai } from "@fabrik/ui/openai"
-import { handler } from "@fabrik/ui/server"
+import { openai } from "@fabrik-sdk/ui/openai"
+import { handler } from "@fabrik-sdk/ui/server"
 
 export const POST = handler({
   provider: openai({ model: "gpt-4o" })
@@ -37,8 +37,8 @@ export const POST = handler({
 ### Client page
 
 ```tsx title="app/page.tsx"
-import { Fabrik, Chat } from "@fabrik/ui/react"
-import { server } from "@fabrik/ui/server"
+import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
+import { server } from "@fabrik-sdk/ui/server"
 
 const provider = server({ url: "/api/chat" })
 

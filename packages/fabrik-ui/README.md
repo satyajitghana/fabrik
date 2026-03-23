@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.svg" alt="fabrik logo" width="64" height="64" />
+  <img src="https://raw.githubusercontent.com/satyajitghana/fabrik/master/assets/logo.svg" alt="fabrik logo" width="64" height="64" />
   <h1>@fabrik-sdk/ui</h1>
   <p><strong>Generative UI SDK for any LLM</strong></p>
   <p>The AI decides what to show — not just say.</p>

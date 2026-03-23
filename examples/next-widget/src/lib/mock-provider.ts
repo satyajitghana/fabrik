@@ -1,4 +1,4 @@
-import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik/ui"
+import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik-sdk/ui"
 
 interface OpenMeteoCurrentWeather {
   temperature_2m: number

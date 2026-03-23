@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@fabrik/ui": "workspace:*",
+    "@fabrik-sdk/ui": "workspace:*",
     "motion": "^12.38.0",
     "next": "16.1.7",
     "react": "19.2.3",

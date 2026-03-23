@@ -6,7 +6,7 @@ description: Get a working generative UI chat in under 5 minutes
 ## 1. Install
 
 ```bash
-pnpm add @fabrik/ui zod motion
+pnpm add @fabrik-sdk/ui zod motion
 ```
 
 ## 2. Create the server route
@@ -14,8 +14,8 @@ pnpm add @fabrik/ui zod motion
 This file handles LLM communication. API keys are read from environment variables.
 
 ```ts title="app/api/chat/route.ts"
-import { openai } from "@fabrik/ui/openai"
-import { handler } from "@fabrik/ui/server"
+import { openai } from "@fabrik-sdk/ui/openai"
+import { handler } from "@fabrik-sdk/ui/server"
 
 export const POST = handler({
   provider: openai({ model: "gpt-4o" })
@@ -27,9 +27,9 @@ export const POST = handler({
 
 ```tsx title="app/page.tsx"
 "use client"
-import { Fabrik, Chat } from "@fabrik/ui/react"
-import { server } from "@fabrik/ui/server"
-import { defineComponent } from "@fabrik/ui"
+import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
+import { server } from "@fabrik-sdk/ui/server"
+import { defineComponent } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 const provider = server({ url: "/api/chat" })
@@ -79,13 +79,13 @@ Open `http://localhost:3000` and ask "Show me the weather in San Francisco".
 Change one import in your server route:
 
 ```ts title="Anthropic"
-import { anthropic } from "@fabrik/ui/anthropic"
+import { anthropic } from "@fabrik-sdk/ui/anthropic"
 export const POST = handler({ provider: anthropic({ model: "claude-sonnet-4-20250514" }) })
 // env: ANTHROPIC_API_KEY
 ```
 
 ```ts title="Google Gemini"
-import { google } from "@fabrik/ui/google"
+import { google } from "@fabrik-sdk/ui/google"
 export const POST = handler({ provider: google({ model: "gemini-2.0-flash" }) })
 // env: GOOGLE_AI_API_KEY
 ```

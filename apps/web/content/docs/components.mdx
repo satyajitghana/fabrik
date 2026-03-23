@@ -10,7 +10,7 @@ Fabrik ships two drop-in chat surfaces:
 ### Full-page chat
 
 ```tsx title="app/page.tsx"
-import { Fabrik, Chat } from "@fabrik/ui/react"
+import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
 
 export default function Page() {
   return (
@@ -36,7 +36,7 @@ export default function Page() {
 ### Floating action button
 
 ```tsx title="app/page.tsx"
-import { Fabrik, Fab } from "@fabrik/ui/react"
+import { Fabrik, Fab } from "@fabrik-sdk/ui/react"
 
 export default function Page() {
   return (
@@ -54,7 +54,7 @@ export default function Page() {
 Register React components the LLM can render:
 
 ```tsx title="components/stock-chart.tsx"
-import { defineComponent } from "@fabrik/ui"
+import { defineComponent } from "@fabrik-sdk/ui"
 import { z } from "zod"
 
 export const stockChart = defineComponent({
@@ -96,7 +96,7 @@ export const stockChart = defineComponent({
 ### Passing components to Fabrik
 
 ```tsx title="app/page.tsx"
-import { Fabrik, Chat } from "@fabrik/ui/react"
+import { Fabrik, Chat } from "@fabrik-sdk/ui/react"
 import { weatherCard } from "@/components/weather-card"
 import { stockChart } from "@/components/stock-chart"
 
@@ -114,7 +114,7 @@ export default function Page() {
 Group components into reusable collections:
 
 ```ts title="lib/components.ts"
-import { createLibrary } from "@fabrik/ui"
+import { createLibrary } from "@fabrik-sdk/ui"
 import { weatherCard } from "@/components/weather-card"
 import { stockChart } from "@/components/stock-chart"
 import { dataTable } from "@/components/data-table"
@@ -134,7 +134,7 @@ Build custom chat UI with the `useChat` hook:
 
 ```tsx title="components/custom-chat.tsx"
 "use client"
-import { useChat } from "@fabrik/ui/react"
+import { useChat } from "@fabrik-sdk/ui/react"
 
 export function CustomChat() {
   const { messages, input, send, isLoading, status } = useChat()

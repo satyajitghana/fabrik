@@ -1,4 +1,4 @@
-import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik/ui"
+import type { Provider, StreamEvent, StreamOptions, FabrikMessage } from "@fabrik-sdk/ui"
 
 /**
  * Mock provider that simulates an LLM for the pages demo.
